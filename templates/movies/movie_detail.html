@@ -98,7 +98,7 @@
             {% for img in movie.images.all %}
                 <div class="col">
                     <div class="overflow-hidden h-100" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
-                        <img src="{{ img.image.url }}" alt="{{ img.caption|default:movie.title }}" class="img-fluid" style="border-radius: var(--radius-md); width: 100%; object-fit: cover;" loading="lazy">
+                        <img src="{{ img.display_url }}" alt="{{ img.caption|default:movie.title }}" class="img-fluid" style="border-radius: var(--radius-md); width: 100%; object-fit: cover;" loading="lazy">
                         {% if img.caption %}
                             <div class="p-2 small text-muted text-center text-truncate">{{ img.caption }}</div>
                         {% endif %}
@@ -119,8 +119,8 @@
             {% for member in movie.cast.all %}
                 <div class="col">
                     <div class="text-center p-3 h-100" style="background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); transition: transform var(--transition-base), box-shadow var(--transition-base);">
-                        {% if member.photo %}
-                            <img src="{{ member.photo.url }}" alt="{{ member.name }}" class="rounded-circle mx-auto mb-2" style="width: 80px; height: 80px; object-fit: cover; border: 2px solid var(--accent);">
+                        {% if member.display_photo %}
+                            <img src="{{ member.display_photo }}" alt="{{ member.name }}" class="rounded-circle mx-auto mb-2" style="width: 80px; height: 80px; object-fit: cover; border: 2px solid var(--accent);">
                         {% else %}
                             <div class="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-2 text-light fs-3" style="width: 80px; height: 80px; background: var(--bg-secondary); border: 2px solid var(--border-color);">
                                 <i class="fa-solid fa-user"></i>

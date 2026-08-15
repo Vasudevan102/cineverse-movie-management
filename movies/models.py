@@ -33,12 +33,24 @@ class CastMember(models.Model):
     character_name = models.CharField(max_length=100, help_text="Role or character played in movie")
     biography = models.TextField(blank=True)
     photo = models.ImageField(upload_to='cast/', blank=True, null=True)
+    photo_url = models.URLField(max_length=500, blank=True, null=True, help_text="Remote photo URL")
 
     class Meta:
         ordering = ['name']
 
     def __str__(self):
         return f"{self.name} as {self.character_name}"
+
+    @property
+    def display_photo(self):
+        if self.photo_url:
+            return self.photo_url
+        if self.photo:
+            try:
+                return self.photo.url
+            except Exception:
+                pass
+        return None
 
 class Movie(models.Model):
     AGE_CERTIFICATE_CHOICES = [
@@ -111,16 +123,19 @@ class Movie(models.Model):
 
     @property
     def primary_poster(self):
-        primary_image = self.images.filter(is_primary=True).first()
-        if primary_image:
-            return primary_image.image.url
-        first_image = self.images.first()
-        if first_image:
-            return first_image.image.url
+        primary_image = self.images.filter(is_primary=True, image_type='poster').first() or self.images.filter(is_primary=True).first()
+        if primary_image and primary_image.display_url:
+            return primary_image.display_url
+        first_poster = self.images.filter(image_type='poster').first() or self.images.first()
+        if first_poster and first_poster.display_url:
+            return first_poster.display_url
         return None
 
     @property
     def backdrop_url(self):
+        backdrop_image = self.images.filter(image_type='backdrop').first()
+        if backdrop_image and backdrop_image.display_url:
+            return backdrop_image.display_url
         return self.primary_poster
 
     @property
@@ -171,8 +186,16 @@ class Movie(models.Model):
 
 
 class MovieImage(models.Model):
+    IMAGE_TYPE_CHOICES = [
+        ('poster', 'Poster'),
+        ('backdrop', 'Backdrop'),
+        ('gallery', 'Gallery'),
+    ]
+
     movie = models.ForeignKey(Movie, on_delete=models.CASCADE, related_name='images')
-    image = models.ImageField(upload_to='posters/')
+    image = models.ImageField(upload_to='posters/', blank=True, null=True)
+    image_url = models.URLField(max_length=500, blank=True, null=True, help_text="Remote image URL (e.g. TMDB or CDN)")
+    image_type = models.CharField(max_length=20, choices=IMAGE_TYPE_CHOICES, default='poster')
     caption = models.CharField(max_length=200, blank=True)
     is_primary = models.BooleanField(default=False)
     uploaded_at = models.DateTimeField(auto_now_add=True)
@@ -182,8 +205,19 @@ class MovieImage(models.Model):
 
     def save(self, *args, **kwargs):
         if self.is_primary:
-            MovieImage.objects.filter(movie=self.movie, is_primary=True).exclude(pk=self.pk).update(is_primary=False)
+            MovieImage.objects.filter(movie=self.movie, is_primary=True, image_type=self.image_type).exclude(pk=self.pk).update(is_primary=False)
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"Poster for {self.movie.title} ({'Primary' if self.is_primary else 'Gallery'})"
+        return f"{self.image_type.capitalize()} for {self.movie.title} ({'Primary' if self.is_primary else 'Gallery'})"
+
+    @property
+    def display_url(self):
+        if self.image_url:
+            return self.image_url
+        if self.image:
+            try:
+                return self.image.url
+            except Exception:
+                pass
+        return None

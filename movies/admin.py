@@ -4,7 +4,7 @@ from .models import Language, Genre, CastMember, Movie, MovieImage
 class MovieImageInline(admin.TabularInline):
     model = MovieImage
     extra = 1
-    fields = ('image', 'caption', 'is_primary', 'uploaded_at')
+    fields = ('image_type', 'image_url', 'image', 'caption', 'is_primary', 'uploaded_at')
     readonly_fields = ('uploaded_at',)
 
 @admin.register(Language)
@@ -20,8 +20,9 @@ class GenreAdmin(admin.ModelAdmin):
 
 @admin.register(CastMember)
 class CastMemberAdmin(admin.ModelAdmin):
-    list_display = ('name', 'character_name')
+    list_display = ('name', 'character_name', 'photo_url')
     search_fields = ('name', 'character_name')
+    fields = ('name', 'character_name', 'biography', 'photo', 'photo_url')
 
 @admin.register(Movie)
 class MovieAdmin(admin.ModelAdmin):
@@ -49,6 +50,6 @@ class MovieAdmin(admin.ModelAdmin):
 
 @admin.register(MovieImage)
 class MovieImageAdmin(admin.ModelAdmin):
-    list_display = ('movie', 'caption', 'is_primary', 'uploaded_at')
-    list_filter = ('is_primary', 'uploaded_at')
+    list_display = ('movie', 'image_type', 'caption', 'is_primary', 'uploaded_at')
+    list_filter = ('image_type', 'is_primary', 'uploaded_at')
     search_fields = ('movie__title', 'caption')

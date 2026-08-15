@@ -66,3 +66,32 @@ class MoviesTestCase(TestCase):
         self.assertTrue(m.slug)
         self.assertNotIn('.', m.slug)
         self.assertNotIn('!', m.slug)
+
+    def test_movie_image_display_url_and_fallback(self):
+        from movies.models import MovieImage
+        img = MovieImage.objects.create(
+            movie=self.movie,
+            image_url='https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=600',
+            image_type='poster',
+            is_primary=True
+        )
+        self.assertEqual(img.display_url, 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=600')
+        self.assertEqual(self.movie.primary_poster, 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=600')
+
+    def test_cast_member_photo_url_display(self):
+        from movies.models import CastMember
+        member = CastMember.objects.create(
+            name='Vijay',
+            character_name='Thalapathy',
+            photo_url='https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200'
+        )
+        self.assertEqual(member.display_photo, 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200')
+
+    def test_seed_data_command_idempotency(self):
+        from django.core.management import call_command
+        call_command('seed_data')
+        movie_count_first = Movie.objects.count()
+        call_command('seed_data')
+        movie_count_second = Movie.objects.count()
+        self.assertEqual(movie_count_first, movie_count_second)
+
