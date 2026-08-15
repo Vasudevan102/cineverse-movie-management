@@ -64,31 +64,54 @@ def theater_detail_view(request, pk):
     return render(request, 'booking/theater_detail.html', context)
 
 def show_list_view(request):
-    movie_slug = request.GET.get('movie')
-    city = request.GET.get('city')
-    date = request.GET.get('date')
+    movie_param = request.GET.get('movie')
+    city_param = request.GET.get('city')
+    date_param = request.GET.get('date')
 
-    shows = Show.objects.filter(is_active=True, show_date__gte=timezone.now().date()).select_related('movie', 'movie__language', 'theater')
+    today = timezone.localdate()
+    shows = Show.objects.filter(
+        is_active=True,
+        theater__is_active=True,
+        show_date__gte=today
+    ).select_related('movie', 'movie__language', 'theater')
 
     selected_movie = None
-    if movie_slug:
-        selected_movie = get_object_or_404(Movie, slug=movie_slug)
-        shows = shows.filter(movie=selected_movie)
+    if movie_param and movie_param.strip():
+        m_val = movie_param.strip()
+        if m_val.isdigit():
+            selected_movie = Movie.objects.filter(id=int(m_val)).first()
+        if not selected_movie:
+            selected_movie = Movie.objects.filter(slug__iexact=m_val).first()
+        if not selected_movie:
+            selected_movie = Movie.objects.filter(title__iexact=m_val).first()
+        if not selected_movie and '-' in m_val:
+            base_slug = m_val.split('-')[0]
+            selected_movie = Movie.objects.filter(slug__iexact=base_slug).first()
 
-    if city:
-        shows = shows.filter(theater__city__iexact=city)
+        if selected_movie:
+            shows = shows.filter(movie=selected_movie)
 
-    if date:
-        shows = shows.filter(show_date=date)
+    if city_param and city_param.strip():
+        c_val = city_param.strip()
+        if c_val.lower() not in ['', 'all', 'all cities', 'all_cities']:
+            shows = shows.filter(theater__city__iexact=c_val)
+
+    if date_param and date_param.strip():
+        from datetime import datetime as dt
+        try:
+            parsed_date = dt.strptime(date_param.strip(), '%Y-%m-%d').date()
+            shows = shows.filter(show_date=parsed_date)
+        except (ValueError, TypeError):
+            pass
 
     theaters_cities = Theater.objects.filter(is_active=True).values_list('city', flat=True).distinct()
 
     context = {
         'shows': shows,
         'selected_movie': selected_movie,
-        'cities': sorted(list(set(theaters_cities))),
-        'selected_city': city,
-        'selected_date': date,
+        'cities': sorted(list(set(c for c in theaters_cities if c))),
+        'selected_city': city_param,
+        'selected_date': date_param,
     }
     return render(request, 'booking/show_list.html', context)
 

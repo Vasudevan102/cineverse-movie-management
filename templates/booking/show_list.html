@@ -15,6 +15,9 @@
     <!-- Filter Bar -->
     <div class="p-3 mb-4 glass aurora-card">
         <form method="GET" action="{% url 'show_list' %}" class="row g-3 align-items-end">
+            {% if selected_movie %}
+                <input type="hidden" name="movie" value="{{ selected_movie.slug }}">
+            {% endif %}
             <div class="col-md-4">
                 <label class="form-label text-secondary small fw-bold">Select City</label>
                 <select name="city" class="form-select form-select-cineverse text-white" style="background: rgba(13, 19, 38, 0.8);">
