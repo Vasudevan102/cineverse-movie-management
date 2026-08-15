@@ -1,0 +1,199 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Select Seats — {{ show.movie.title }} | CineVerse{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 960px;">
+    <!-- Back Navigation -->
+    <div class="mb-3 d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <a href="{% url 'show_list' %}?movie={{ show.movie.slug }}&city={{ show.theater.city }}" class="btn btn-outline-glass btn-sm">
+            <i class="fa-solid fa-arrow-left me-2"></i>Back to Showtimes
+        </a>
+        <span class="badge bg-dark border border-secondary text-secondary">
+            Step 6 of 8: Seat Selection
+        </span>
+    </div>
+
+    <!-- Show & Movie Header -->
+    <div class="p-4 mb-4 glass glass-reflection">
+        <div class="row align-items-center g-3">
+            <div class="col-md-3 col-lg-2">
+                <div class="poster-wrapper rounded-3 shadow">
+                    {% if show.movie.primary_poster %}
+                        <img src="{{ show.movie.primary_poster }}" alt="{{ show.movie.title }}" class="poster-image">
+                    {% else %}
+                        <div class="poster-fallback">
+                            <i class="fa-solid fa-clapperboard poster-fallback-icon"></i>
+                            <h6 class="fw-bold text-white mb-1">{{ show.movie.title }}</h6>
+                        </div>
+                    {% endif %}
+                    <span class="card-cert-badge">{{ show.movie.age_certificate }}</span>
+                </div>
+            </div>
+
+            <div class="col-md-9 col-lg-10">
+                <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-2">
+                    <div>
+                        <span class="badge bg-secondary mb-1">📍 {{ show.theater.city }}</span>
+                        <h3 class="fw-bold text-white mb-0">{{ show.movie.title }}</h3>
+                        <p class="text-secondary small mb-0">
+                            <i class="fa-solid fa-building-user text-danger me-1"></i>{{ show.theater.name }} ({{ show.screen }}) — {{ show.theater.location }}
+                        </p>
+                    </div>
+                    <div class="text-end">
+                        <span class="fs-4 fw-bold text-success" id="unit-ticket-price" data-price="{{ show.ticket_price }}">₹{{ show.ticket_price|floatformat:0 }}</span>
+                        <small class="text-muted d-block">per ticket</small>
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-center gap-2 mb-3 flex-wrap">
+                    <span class="meta-pill"><i class="fa-solid fa-calendar me-1 text-warning"></i>{{ show.show_date|date:"D, M d, Y" }}</span>
+                    <span class="meta-pill"><i class="fa-regular fa-clock me-1 text-warning"></i>{{ show.start_time|time:"h:i A" }} - {{ show.end_time|time:"h:i A" }}</span>
+                    <span class="meta-pill"><i class="fa-solid fa-language text-info me-1"></i>{{ show.movie.language.name }}</span>
+                    <span class="meta-pill"><i class="fa-solid fa-clock me-1"></i>{{ show.movie.formatted_duration }}</span>
+                </div>
+
+                <!-- Live Occupancy Bar -->
+                <div class="p-3 rounded-3 bg-dark border border-secondary">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="small text-white fw-bold">
+                            <i class="fa-solid fa-users text-danger me-1"></i>Show Occupancy: {{ show.occupancy_percent }}% Booked
+                        </span>
+                        <span class="badge {% if show.occupancy_percent >= 90 %}bg-danger animate-pulse{% elif show.occupancy_percent >= 70 %}bg-warning text-dark{% else %}bg-success{% endif %}">
+                            {{ show.occupancy_status }}
+                        </span>
+                    </div>
+                    <div class="progress mb-2" style="height: 8px; background: rgba(255,255,255,0.08);">
+                        <div class="progress-bar {% if show.occupancy_percent >= 90 %}bg-danger{% elif show.occupancy_percent >= 70 %}bg-warning{% else %}bg-success{% endif %}" role="progressbar" data-width="{{ show.occupancy_percent }}%" aria-valuenow="{{ show.occupancy_percent }}" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center small text-secondary">
+                        <span>👥 {{ show.booked_seats_count }} viewers booked for this show</span>
+                        <span>🎟 {{ show.available_seats }} of {{ show.total_seats }} seats available</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2D Interactive Seat Map -->
+    <div class="p-4 mb-4 glass">
+        <h5 class="fw-bold text-white text-center mb-1">
+            <i class="fa-solid fa-couch text-danger me-2"></i>Select Seats
+        </h5>
+        <p class="text-secondary text-center small mb-4">Click on available seats to select. Standard & Premium rows available.</p>
+
+        <!-- Cinema Screen Bar -->
+        <div class="cinema-screen-container">
+            <div class="cinema-screen-bar"></div>
+            <span class="text-uppercase small text-secondary fw-bold" style="letter-spacing: 2px;">SCREEN THIS WAY</span>
+        </div>
+
+        <!-- Legend -->
+        <div class="d-flex justify-content-center flex-wrap gap-4 mb-4 p-2 rounded bg-dark border border-secondary">
+            <div class="seat-legend-item">
+                <span class="seat-indicator indicator-available">○</span>
+                <span>Available</span>
+            </div>
+            <div class="seat-legend-item">
+                <span class="seat-indicator indicator-selected">●</span>
+                <span>Selected</span>
+            </div>
+            <div class="seat-legend-item">
+                <span class="seat-indicator indicator-booked">✕</span>
+                <span>Booked</span>
+            </div>
+            <div class="seat-legend-item">
+                <span class="seat-indicator indicator-premium">◆</span>
+                <span>Premium (Row E-F)</span>
+            </div>
+        </div>
+
+        <!-- 2D Seat Grid -->
+        <div class="seat-grid-container text-center my-4 overflow-auto py-2" id="visual-seat-grid">
+            <!-- Row A to D (Standard) -->
+            {% for row in "ABCD" %}
+                <div class="d-flex align-items-center justify-content-center gap-2 mb-2">
+                    <span class="text-muted fw-bold small me-2" style="width: 20px;">{{ row }}</span>
+                    {% for num in "12345678" %}
+                        <button type="button" 
+                                class="seat-btn seat-icon seat-available" 
+                                data-seat-id="{{ row }}{{ num }}" 
+                                data-price="{{ show.ticket_price }}">
+                            {{ num }}
+                        </button>
+                    {% endfor %}
+                    <span class="text-muted fw-bold small ms-2" style="width: 20px;">{{ row }}</span>
+                </div>
+            {% endfor %}
+
+            <div class="my-3 border-top border-secondary opacity-25" style="max-width: 480px; margin: 0 auto;"></div>
+
+            <!-- Row E & F (Premium) -->
+            {% for row in "EF" %}
+                <div class="d-flex align-items-center justify-content-center gap-2 mb-2">
+                    <span class="text-warning fw-bold small me-2" style="width: 20px;">{{ row }}</span>
+                    {% for num in "12345678" %}
+                        <button type="button" 
+                                class="seat-btn seat-icon seat-available border-warning" 
+                                data-seat-id="{{ row }}{{ num }}" 
+                                data-price="{{ show.ticket_price }}">
+                            {{ num }}
+                        </button>
+                    {% endfor %}
+                    <span class="text-warning fw-bold small ms-2" style="width: 20px;">{{ row }}</span>
+                </div>
+            {% endfor %}
+        </div>
+
+        <!-- Selection Summary & Form -->
+        <form method="POST" id="seat-booking-form" action="{% url 'booking_create' show.id %}">
+            {% csrf_token %}
+            <!-- Hidden input for selected seat IDs -->
+            <input type="hidden" name="selected_seats" id="selected_seats_input" value="{{ draft_selected_seats|default:'' }}">
+            <input type="hidden" name="number_of_seats" id="id_number_of_seats" value="1">
+
+            <div class="p-4 rounded-3 bg-dark border border-secondary mt-4">
+                <div class="row align-items-center g-3">
+                    <div class="col-md-6">
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <span class="badge bg-danger">Seats Selected</span>
+                            <strong class="text-white fs-6" id="selected-seats-display">None</strong>
+                        </div>
+                        <div class="small text-secondary">
+                            Selected Counter: <span class="text-white fw-bold" id="selected-count-display">0</span> seat(s)
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="p-3 rounded bg-secondary bg-opacity-10 border border-secondary">
+                            <div class="d-flex justify-content-between small text-secondary mb-1">
+                                <span>Ticket Subtotal:</span>
+                                <span class="text-white fw-bold" id="ticket-subtotal">₹0</span>
+                            </div>
+                            <div class="d-flex justify-content-between small text-secondary mb-1">
+                                <span>Convenience Fee:</span>
+                                <span class="text-white" id="convenience-fee">₹0</span>
+                            </div>
+                            <div class="d-flex justify-content-between small text-secondary mb-2">
+                                <span>Taxes & GST (18%):</span>
+                                <span class="text-white" id="taxes-fee">₹0</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center border-top border-secondary pt-2">
+                                <span class="fw-bold text-white fs-6">Estimated Total:</span>
+                                <span class="fs-3 fw-bold text-success" id="total-calculated-price">₹0</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-12 text-end pt-2">
+                        <button type="submit" class="btn btn-accent btn-lg fw-bold px-5 shadow-glow" id="confirm-seats-btn" disabled>
+                            Continue to Payment <i class="fa-solid fa-arrow-right ms-2"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

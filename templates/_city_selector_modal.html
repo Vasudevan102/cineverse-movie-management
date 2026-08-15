@@ -1,0 +1,125 @@
+<!-- Aurora Glass City Selector Modal -->
+<div class="modal fade modal-glass" id="citySelectorModal" tabindex="-1" aria-labelledby="citySelectorModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content aurora-card border-0" style="background: rgba(13, 19, 38, 0.94); backdrop-filter: blur(30px);">
+            <div class="modal-header border-bottom border-secondary pb-3">
+                <div>
+                    <h5 class="modal-title fw-bold text-white" id="citySelectorModalLabel">
+                        <i class="fa-solid fa-location-dot me-2" style="color: var(--cyan);"></i>Where are you watching?
+                    </h5>
+                    <p class="text-secondary small mb-0">Select your cinema location to filter available movies, theaters & showtimes.</p>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            
+            <div class="modal-body p-4">
+                <!-- Search input inside city modal -->
+                <div class="mb-4">
+                    <div class="input-group">
+                        <span class="input-group-text bg-transparent border-end-0 text-secondary" style="border-color: var(--glass-border) !important;">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                        </span>
+                        <input type="text" id="city-search-input" class="form-control form-control-cineverse border-start-0 ps-0" placeholder="Search city (e.g. Chennai, Coimbatore, Bengaluru)...">
+                    </div>
+                </div>
+
+                <!-- Popular Cities Grid -->
+                <div class="city-section mb-4">
+                    <h6 class="text-white fw-bold mb-3 small text-uppercase" style="letter-spacing: 1px;">
+                        <i class="fa-solid fa-fire text-danger me-1"></i>Popular Cities
+                    </h6>
+                    <div class="row g-2" id="popular-cities-list">
+                        <div class="col-6 col-sm-4 col-md-3">
+                            <button class="city-pill-btn select-city-btn" data-city="Chennai">
+                                <span>📍 Chennai</span> <i class="fa-solid fa-chevron-right small text-muted"></i>
+                            </button>
+                        </div>
+                        <div class="col-6 col-sm-4 col-md-3">
+                            <button class="city-pill-btn select-city-btn" data-city="Coimbatore">
+                                <span>📍 Coimbatore</span> <i class="fa-solid fa-chevron-right small text-muted"></i>
+                            </button>
+                        </div>
+                        <div class="col-6 col-sm-4 col-md-3">
+                            <button class="city-pill-btn select-city-btn" data-city="Bengaluru">
+                                <span>📍 Bengaluru</span> <i class="fa-solid fa-chevron-right small text-muted"></i>
+                            </button>
+                        </div>
+                        <div class="col-6 col-sm-4 col-md-3">
+                            <button class="city-pill-btn select-city-btn" data-city="Hyderabad">
+                                <span>📍 Hyderabad</span> <i class="fa-solid fa-chevron-right small text-muted"></i>
+                            </button>
+                        </div>
+                        <div class="col-6 col-sm-4 col-md-3">
+                            <button class="city-pill-btn select-city-btn" data-city="Mumbai">
+                                <span>📍 Mumbai</span> <i class="fa-solid fa-chevron-right small text-muted"></i>
+                            </button>
+                        </div>
+                        <div class="col-6 col-sm-4 col-md-3">
+                            <button class="city-pill-btn select-city-btn" data-city="Delhi">
+                                <span>📍 Delhi</span> <i class="fa-solid fa-chevron-right small text-muted"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- South India Cities Grid -->
+                <div class="city-section mb-4">
+                    <h6 class="text-white fw-bold mb-3 small text-uppercase" style="letter-spacing: 1px;">
+                        <i class="fa-solid fa-compass text-info me-1"></i>South India
+                    </h6>
+                    <div class="row g-2" id="south-cities-list">
+                        <div class="col-6 col-sm-4 col-md-3">
+                            <button class="city-pill-btn select-city-btn" data-city="Madurai">
+                                <span>Madurai</span>
+                            </button>
+                        </div>
+                        <div class="col-6 col-sm-4 col-md-3">
+                            <button class="city-pill-btn select-city-btn" data-city="Trichy">
+                                <span>Trichy</span>
+                            </button>
+                        </div>
+                        <div class="col-6 col-sm-4 col-md-3">
+                            <button class="city-pill-btn select-city-btn" data-city="Salem">
+                                <span>Salem</span>
+                            </button>
+                        </div>
+                        <div class="col-6 col-sm-4 col-md-3">
+                            <button class="city-pill-btn select-city-btn" data-city="Tirunelveli">
+                                <span>Tirunelveli</span>
+                            </button>
+                        </div>
+                        <div class="col-6 col-sm-4 col-md-3">
+                            <button class="city-pill-btn select-city-btn" data-city="Kochi">
+                                <span>Kochi</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Other Major Cities -->
+                <div class="city-section">
+                    <h6 class="text-white fw-bold mb-3 small text-uppercase" style="letter-spacing: 1px;">
+                        <i class="fa-solid fa-city text-warning me-1"></i>Other Major Cities
+                    </h6>
+                    <div class="row g-2" id="other-cities-list">
+                        <div class="col-6 col-sm-4 col-md-3">
+                            <button class="city-pill-btn select-city-btn" data-city="Pune">
+                                <span>Pune</span>
+                            </button>
+                        </div>
+                        <div class="col-6 col-sm-4 col-md-3">
+                            <button class="city-pill-btn select-city-btn" data-city="Kolkata">
+                                <span>Kolkata</span>
+                            </button>
+                        </div>
+                        <div class="col-6 col-sm-4 col-md-3">
+                            <button class="city-pill-btn select-city-btn" data-city="Ahmedabad">
+                                <span>Ahmedabad</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

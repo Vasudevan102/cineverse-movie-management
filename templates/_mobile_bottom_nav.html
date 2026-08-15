@@ -1,0 +1,23 @@
+<!-- Mobile Bottom Glass Navigation Bar -->
+<div class="mobile-bottom-nav">
+    <a href="{% url 'home' %}" class="mobile-nav-item {% if request.resolver_match.url_name == 'home' %}active{% endif %}">
+        <i class="fa-solid fa-house"></i>
+        <span>Home</span>
+    </a>
+    <a href="{% url 'movie_list' %}" class="mobile-nav-item {% if request.resolver_match.url_name == 'movie_list' %}active{% endif %}">
+        <i class="fa-solid fa-clapperboard"></i>
+        <span>Movies</span>
+    </a>
+    <a href="{% url 'my_bookings' %}" class="mobile-nav-item {% if request.resolver_match.url_name == 'my_bookings' %}active{% endif %}">
+        <i class="fa-solid fa-ticket"></i>
+        <span>Bookings</span>
+    </a>
+    <button type="button" class="mobile-nav-item border-0 bg-transparent" data-bs-toggle="modal" data-bs-target="#citySelectorModal">
+        <i class="fa-solid fa-location-dot" style="color: var(--cyan);"></i>
+        <span>City</span>
+    </button>
+    <a href="{% url 'profile' %}" class="mobile-nav-item {% if request.resolver_match.url_name == 'profile' %}active{% endif %}">
+        <i class="fa-solid fa-user"></i>
+        <span>Profile</span>
+    </a>
+</div>

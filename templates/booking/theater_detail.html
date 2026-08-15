@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ theater.name }} — CineVerse{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Theater Header Spotlight -->
+    <div class="p-4 mb-5 glass glass-reflection">
+        <div class="row align-items-center g-4">
+            <div class="col-lg-8">
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <span class="badge bg-danger">📍 {{ theater.city }}</span>
+                    <span class="badge bg-secondary"><i class="fa-solid fa-desktop me-1"></i>{{ theater.total_screens }} Screens</span>
+                </div>
+                <h1 class="display-5 fw-bold text-white mb-2">{{ theater.name }}</h1>
+                <p class="text-secondary lead fs-6 mb-3">
+                    <i class="fa-solid fa-location-dot text-danger me-1"></i>{{ theater.location }} — {{ theater.address }}
+                </p>
+
+                {% if theater.facilities %}
+                    <div class="d-flex flex-wrap gap-2 mb-2">
+                        {% for facility in theater.facilities.split %}
+                            <span class="facility-badge fs-6 px-3 py-1"><i class="fa-solid fa-check text-success me-1"></i>{{ facility|cut:"," }}</span>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="col-lg-4 text-lg-end">
+                <div class="p-3 rounded-3 border border-secondary bg-dark d-inline-block text-start">
+                    <div class="text-secondary small fw-bold uppercase">Now Showing</div>
+                    <div class="display-6 fw-bold text-success">{{ total_active_shows }}</div>
+                    <div class="text-muted small">Active showtimes available</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Movies & Showtimes -->
+    <section class="mb-5">
+        <div class="section-header">
+            <h3 class="section-title"><i class="fa-solid fa-clapperboard text-danger"></i>Movies Showing at {{ theater.name }}</h3>
+        </div>
+
+        <div class="row g-4">
+            {% for movie, shows_list in movie_shows_map.items %}
+                <div class="col-12">
+                    <div class="p-4 glass rounded-3">
+                        <div class="row g-4 align-items-center">
+                            <!-- Movie Poster & Basic Info -->
+                            <div class="col-md-3 col-lg-2">
+                                <div class="poster-wrapper rounded-3 shadow">
+                                    {% if movie.primary_poster %}
+                                        <img src="{{ movie.primary_poster }}" alt="{{ movie.title }}" class="poster-image">
+                                    {% else %}
+                                        <div class="poster-fallback">
+                                            <i class="fa-solid fa-clapperboard poster-fallback-icon"></i>
+                                            <h6 class="fw-bold text-white mb-1">{{ movie.title }}</h6>
+                                        </div>
+                                    {% endif %}
+                                    <span class="card-cert-badge">{{ movie.age_certificate }}</span>
+                                </div>
+                            </div>
+
+                            <div class="col-md-9 col-lg-10">
+                                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
+                                    <h4 class="fw-bold text-white mb-0">
+                                        <a href="{% url 'movie_detail' movie.slug %}" class="text-white hover-accent">{{ movie.title }}</a>
+                                    </h4>
+                                    <span class="rating-pill"><i class="fa-solid fa-star me-1"></i>{{ movie.average_rating }}</span>
+                                </div>
+
+                                <div class="d-flex align-items-center gap-2 mb-3 flex-wrap">
+                                    <span class="meta-pill"><i class="fa-solid fa-language text-info me-1"></i>{{ movie.language.name }}</span>
+                                    <span class="meta-pill"><i class="fa-solid fa-clock text-warning me-1"></i>{{ movie.formatted_duration }}</span>
+                                    {% for genre in movie.genres.all|slice:":3" %}
+                                        <span class="genre-pill">{{ genre.name }}</span>
+                                    {% endfor %}
+                                </div>
+
+                                <!-- Showtimes Pills Grid -->
+                                <h6 class="text-white fw-bold mb-2 small text-uppercase" style="letter-spacing: 1px;">Available Showtimes:</h6>
+                                <div class="d-flex flex-wrap gap-2">
+                                    {% for show in shows_list %}
+                                        <a href="{% url 'booking_create' show.id %}" class="showtime-pill" title="Book for {{ show.show_date|date:'M d' }} at {{ show.start_time|time:'h:i A' }}">
+                                            <i class="fa-regular fa-clock text-warning"></i>
+                                            <span>{{ show.show_date|date:"D, M d" }} @ {{ show.start_time|time:"h:i A" }}</span>
+                                            <span class="badge bg-success ms-1">₹{{ show.ticket_price|floatformat:0 }}</span>
+                                        </a>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% empty %}
+                <div class="col-12">
+                    <div class="empty-state">
+                        <i class="fa-solid fa-calendar-xmark"></i>
+                        <h4>No Shows Scheduled</h4>
+                        <p>No active movie showtimes currently scheduled at {{ theater.name }}.</p>
+                        <a href="{% url 'theater_list' %}" class="btn btn-outline-glass mt-2">Explore Other Theaters</a>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+</div>
+{% endblock %}

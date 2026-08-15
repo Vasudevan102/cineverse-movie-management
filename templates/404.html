@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block title %}404 — Page Not Found | CineVerse{% endblock %}
+
+{% block content %}
+<div class="container text-center py-5" style="max-width: 600px;">
+    <div class="p-5 glass glass-reflection">
+        <i class="fa-solid fa-film-simple text-danger display-1 mb-3"></i>
+        <h1 class="display-4 fw-bold text-white mb-2">404</h1>
+        <h4 class="text-white mb-3">Scene Not Found</h4>
+        <p class="text-secondary mb-4">The movie page or resource you are looking for has been moved, removed, or doesn't exist in our catalog.</p>
+        <div class="d-flex justify-content-center gap-3">
+            <a href="{% url 'home' %}" class="btn btn-accent btn-lg px-4"><i class="fa-solid fa-house me-2"></i>Back to Home</a>
+            <a href="{% url 'movie_list' %}" class="btn btn-outline-glass btn-lg px-4">Browse Movies</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

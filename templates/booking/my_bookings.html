@@ -1,0 +1,364 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Tickets & Bookings — CineVerse{% endblock %}
+
+{% block content %}
+<div class="container booking-history-page py-2">
+    <!-- Header -->
+    <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+        <div>
+            <h2 class="fw-bold text-white mb-1">
+                <i class="fa-solid fa-ticket text-danger me-2"></i>My Bookings History
+            </h2>
+            <p class="text-secondary mb-0">Manage your cinema tickets, upcoming shows, and past bookings.</p>
+        </div>
+    </div>
+
+    <!-- Filter Bar & Search Box -->
+    <div class="p-3 mb-4 glass rounded-4 shadow-sm">
+        <div class="row g-3 align-items-center">
+            <div class="col-lg-8">
+                <div class="d-flex flex-wrap gap-2 align-items-center">
+                    <a href="{% url 'my_bookings' %}{% if search_q %}?q={{ search_q }}{% endif %}"
+                       class="booking-filter-pill {% if not selected_status %}active{% endif %}">
+                        All {% if counts.all is not None %}({{ counts.all }}){% endif %}
+                    </a>
+                    <a href="{% url 'my_bookings' %}?status=upcoming{% if search_q %}&q={{ search_q }}{% endif %}"
+                       class="booking-filter-pill {% if selected_status == 'upcoming' %}active{% endif %}">
+                        Upcoming {% if counts.upcoming is not None %}({{ counts.upcoming }}){% endif %}
+                    </a>
+                    <a href="{% url 'my_bookings' %}?status=completed{% if search_q %}&q={{ search_q }}{% endif %}"
+                       class="booking-filter-pill {% if selected_status == 'completed' %}active{% endif %}">
+                        Completed {% if counts.completed is not None %}({{ counts.completed }}){% endif %}
+                    </a>
+                    <a href="{% url 'my_bookings' %}?status=cancelled{% if search_q %}&q={{ search_q }}{% endif %}"
+                       class="booking-filter-pill {% if selected_status == 'cancelled' %}active{% endif %}">
+                        Cancelled {% if counts.cancelled is not None %}({{ counts.cancelled }}){% endif %}
+                    </a>
+                    <a href="{% url 'my_bookings' %}?status=watched{% if search_q %}&q={{ search_q }}{% endif %}"
+                       class="booking-filter-pill {% if selected_status == 'watched' %}active{% endif %}">
+                        Watched {% if counts.watched is not None %}({{ counts.watched }}){% endif %}
+                    </a>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <form method="GET" action="{% url 'my_bookings' %}">
+                    {% if selected_status %}
+                        <input type="hidden" name="status" value="{{ selected_status }}">
+                    {% endif %}
+                    <div class="input-group">
+                        <span class="input-group-text bg-transparent border-end-0 text-secondary" style="border-color: var(--glass-border) !important;">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                        </span>
+                        <input type="text" name="q" value="{{ search_q|default:'' }}" 
+                               class="form-control form-control-cineverse border-start-0 ps-0" 
+                               placeholder="Search movie or booking ID">
+                        {% if search_q %}
+                            <a href="{% url 'my_bookings' %}{% if selected_status %}?status={{ selected_status }}{% endif %}" 
+                               class="btn btn-outline-glass text-secondary border-start-0" title="Clear Search">
+                                <i class="fa-solid fa-xmark"></i>
+                            </a>
+                        {% endif %}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Booking Cards Container -->
+    <div class="booking-cards-list mb-5">
+        {% for booking in bookings %}
+            <div class="booking-history-card glass glass-reflection rounded-4 p-3 p-md-4 mb-3 position-relative">
+                <div class="row g-3 align-items-center">
+                    <!-- Movie Poster -->
+                    <div class="col-12 col-sm-4 col-md-3 col-lg-2 text-center text-sm-start">
+                        <div class="booking-poster-wrapper rounded-3 shadow mx-auto ms-sm-0 position-relative">
+                            {% if booking.show.movie.primary_poster %}
+                                <img src="{{ booking.show.movie.primary_poster }}" alt="{{ booking.show.movie.title }}" class="booking-poster-img">
+                            {% else %}
+                                <div class="booking-poster-fallback d-flex align-items-center justify-content-center h-100 fs-3 text-secondary">
+                                    🎬
+                                </div>
+                            {% endif %}
+                            {% if booking.show.movie.age_certificate %}
+                                <span class="booking-cert-badge">{{ booking.show.movie.age_certificate }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Movie & Showtime Info -->
+                    <div class="col-12 col-sm-8 col-md-6 col-lg-7">
+                        <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+                            <h4 class="fw-bold text-white mb-0">
+                                <a href="{% url 'booking_detail' booking.booking_reference %}" class="text-white text-decoration-none hover-accent">
+                                    {{ booking.show.movie.title }}
+                                </a>
+                            </h4>
+                        </div>
+
+                        <div class="text-secondary small mb-3">
+                            <span>
+                                {% if booking.show.movie.language %}{{ booking.show.movie.language.name }}{% endif %}
+                                {% if booking.show.movie.duration %} • {{ booking.show.movie.duration }}m{% endif %}
+                                {% if booking.show.movie.age_certificate %} • {{ booking.show.movie.age_certificate }}{% endif %}
+                            </span>
+                        </div>
+
+                        <div class="row g-2 mb-3 text-secondary small">
+                            <!-- Theater -->
+                            <div class="col-12 col-md-6">
+                                <div class="mb-1 text-white">
+                                    <i class="fa-solid fa-masks-theater text-danger me-2"></i><strong>{{ booking.show.theater.name }}</strong>
+                                </div>
+                                <div class="ps-4">
+                                    📍 {{ booking.show.theater.city }} • <span class="text-secondary">{{ booking.show.screen }}</span>
+                                </div>
+                            </div>
+
+                            <!-- Date & Time -->
+                            <div class="col-12 col-md-6">
+                                <div class="mb-1 text-warning">
+                                    <i class="fa-regular fa-calendar-days me-2"></i><strong>{{ booking.show.show_date|date:"D, M d, Y" }}</strong>
+                                </div>
+                                <div class="ps-4 text-warning">
+                                    <i class="fa-regular fa-clock me-2"></i>{{ booking.show.start_time|time:"h:i A" }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Seats & Booking ID -->
+                        <div class="d-flex flex-wrap align-items-center gap-3 pt-2 border-top border-secondary-subtle text-secondary small">
+                            <div>
+                                <i class="fa-solid fa-couch text-info me-1"></i>Seats: 
+                                <strong class="text-white bg-dark px-2 py-0-5 rounded border border-secondary">{{ booking.selected_seats|default:booking.number_of_seats }}</strong>
+                            </div>
+                            <div class="d-flex align-items-center">
+                                <span class="me-1">Booking ID:</span>
+                                <code class="text-warning fw-bold bg-dark px-2 py-0-5 rounded border border-secondary me-2">{{ booking.booking_reference }}</code>
+                                <button type="button" class="btn btn-sm btn-outline-glass text-secondary py-0 px-2 rounded-2" 
+                                        onclick="copyBookingId('{{ booking.booking_reference }}', this)" 
+                                        title="Copy Booking ID">
+                                    <i class="fa-regular fa-copy me-1"></i>Copy
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Status, Price & Action Button -->
+                    <div class="col-12 col-md-3 col-lg-3 border-top border-md-0 border-secondary-subtle pt-3 pt-md-0 text-md-end d-flex flex-column justify-content-between align-items-start align-items-md-end h-100">
+                        <!-- Badges -->
+                        <div class="d-flex flex-wrap gap-1 mb-3 justify-content-md-end">
+                            {% if booking.status == 'CONFIRMED' %}
+                                <span class="badge bg-success px-2.5 py-1.5"><i class="fa-solid fa-circle-check me-1"></i>Confirmed</span>
+                            {% elif booking.status == 'CANCELLED' %}
+                                <span class="badge bg-danger px-2.5 py-1.5"><i class="fa-solid fa-circle-xmark me-1"></i>Cancelled</span>
+                            {% elif booking.status == 'COMPLETED' %}
+                                <span class="badge bg-info text-dark px-2.5 py-1.5"><i class="fa-solid fa-flag-checkered me-1"></i>Completed</span>
+                            {% endif %}
+
+                            {% if booking.payment_status == 'PAID' %}
+                                <span class="badge bg-outline-success text-success border border-success px-2.5 py-1.5"><i class="fa-solid fa-check me-1"></i>Paid</span>
+                            {% elif booking.payment_status == 'REFUNDED' %}
+                                <span class="badge bg-outline-info text-info border border-info px-2.5 py-1.5"><i class="fa-solid fa-rotate-left me-1"></i>Refunded</span>
+                            {% endif %}
+
+                            {% if booking.watched %}
+                                <span class="badge bg-secondary px-2.5 py-1.5"><i class="fa-solid fa-eye me-1"></i>Watched</span>
+                            {% endif %}
+                        </div>
+
+                        <!-- Price -->
+                        <div class="mb-3">
+                            <small class="text-secondary d-block text-uppercase fw-semibold" style="letter-spacing: 0.5px;">
+                                {% if booking.status == 'CANCELLED' %}TOTAL{% else %}TOTAL PAID{% endif %}
+                            </small>
+                            <span class="fs-3 fw-bold text-success">₹{{ booking.total_amount|floatformat:0 }}</span>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="d-flex flex-wrap gap-2 w-100 justify-content-md-end">
+                            <a href="{% url 'booking_detail' booking.booking_reference %}" class="btn btn-accent btn-sm px-3 py-2 fw-bold flex-grow-1 flex-md-grow-0 shadow-sm">
+                                <i class="fa-solid fa-ticket me-1"></i>View Ticket
+                            </a>
+                            {% if booking.status == 'CONFIRMED' and not booking.show.is_past %}
+                                <a href="{% url 'booking_cancel' booking.booking_reference %}" class="btn btn-outline-glass btn-sm text-danger py-2 flex-grow-1 flex-md-grow-0">
+                                    Cancel
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% empty %}
+            <!-- Friendly Filter-Specific Empty State -->
+            <div class="glass p-5 rounded-4 text-center my-4 animate-fade-up">
+                <div class="d-inline-flex align-items-center justify-content-center bg-dark text-warning rounded-circle shadow-lg mb-3" style="width: 70px; height: 70px; font-size: 2rem; border: 1px solid var(--glass-border);">
+                    🎟
+                </div>
+                {% if selected_status == 'upcoming' %}
+                    <h4 class="fw-bold text-white mb-2">No Upcoming Bookings</h4>
+                    <p class="text-secondary mb-4">You don't have any upcoming cinema tickets.</p>
+                    <a href="{% url 'movie_list' %}" class="btn btn-accent fw-bold px-4 py-2">
+                        <i class="fa-solid fa-compass me-2"></i>Explore Movies
+                    </a>
+                {% elif selected_status == 'completed' %}
+                    <h4 class="fw-bold text-white mb-2">No Completed Bookings</h4>
+                    <p class="text-secondary mb-4">No completed bookings yet.</p>
+                    <a href="{% url 'movie_list' %}" class="btn btn-outline-glass px-4 py-2">Browse Cinema Shows</a>
+                {% elif selected_status == 'cancelled' %}
+                    <h4 class="fw-bold text-white mb-2">No Cancelled Bookings</h4>
+                    <p class="text-secondary mb-0">No cancelled bookings.</p>
+                {% elif selected_status == 'watched' %}
+                    <h4 class="fw-bold text-white mb-2">No Watched Movies</h4>
+                    <p class="text-secondary mb-0">You haven't marked any shows as watched yet.</p>
+                {% else %}
+                    <h4 class="fw-bold text-white mb-2">No Bookings Found</h4>
+                    <p class="text-secondary mb-4">You don't have any bookings matching this search or filter.</p>
+                    <a href="{% url 'movie_list' %}" class="btn btn-accent fw-bold px-4 py-2">
+                        <i class="fa-solid fa-film me-2"></i>Explore Movies
+                    </a>
+                {% endif %}
+            </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Copy Toast Notification -->
+<div id="booking-toast" class="toast align-items-center text-white bg-dark border border-danger position-fixed bottom-0 end-0 m-3 p-2 rounded-3 shadow-lg" style="z-index: 1100; display: none; min-width: 250px;">
+    <div class="d-flex align-items-center">
+        <div class="toast-body">
+            <i class="fa-solid fa-circle-check text-success me-2"></i><span id="toast-message">Booking ID copied</span>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Booking History Scoped Styles */
+.booking-history-page {
+    min-height: 80vh;
+}
+
+.booking-filter-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.45rem 0.9rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-muted, #9ca3af);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.08));
+    border-radius: 50rem;
+    text-decoration: none;
+    transition: all 0.2s ease-in-out;
+}
+
+.booking-filter-pill:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.booking-filter-pill.active {
+    color: #ffffff;
+    background: var(--accent, #e50914);
+    border-color: var(--accent, #e50914);
+    box-shadow: 0 0 12px rgba(229, 9, 20, 0.4);
+}
+
+.booking-history-card {
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease, border-color 0.25s ease;
+    border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.08));
+}
+
+.booking-history-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(229, 9, 20, 0.3);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 0 15px rgba(229, 9, 20, 0.15);
+}
+
+.booking-poster-wrapper {
+    width: 85px;
+    height: 120px;
+    overflow: hidden;
+    background: #121212;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.booking-poster-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.booking-cert-badge {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    background: rgba(0, 0, 0, 0.85);
+    color: #ffc107;
+    border: 1px solid #ffc107;
+    font-size: 0.65rem;
+    font-weight: bold;
+    padding: 1px 4px;
+    border-radius: 4px;
+}
+
+@media (max-width: 575.98px) {
+    .booking-poster-wrapper {
+        width: 110px;
+        height: 155px;
+    }
+}
+</style>
+
+<script>
+function copyBookingId(ref, btn) {
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(ref).then(function() {
+            showCopyToast(ref, btn);
+        }).catch(function() {
+            fallbackCopyText(ref, btn);
+        });
+    } else {
+        fallbackCopyText(ref, btn);
+    }
+}
+
+function fallbackCopyText(ref, btn) {
+    const textArea = document.createElement("textarea");
+    textArea.value = ref;
+    document.body.appendChild(textArea);
+    textArea.select();
+    try {
+        document.execCommand('copy');
+        showCopyToast(ref, btn);
+    } catch (err) {
+        console.error('Copy failed', err);
+    }
+    document.body.removeChild(textArea);
+}
+
+function showCopyToast(ref, btn) {
+    const origHTML = btn.innerHTML;
+    btn.innerHTML = '<i class="fa-solid fa-check text-success me-1"></i>Copied';
+    
+    const toast = document.getElementById('booking-toast');
+    const toastMsg = document.getElementById('toast-message');
+    if (toast && toastMsg) {
+        toastMsg.textContent = 'Booking ID copied: ' + ref;
+        toast.style.display = 'block';
+        toast.classList.add('show');
+        setTimeout(function() {
+            toast.style.display = 'none';
+            toast.classList.remove('show');
+        }, 2500);
+    }
+
+    setTimeout(function() {
+        btn.innerHTML = origHTML;
+    }, 2000);
+}
+</script>
+{% endblock %}

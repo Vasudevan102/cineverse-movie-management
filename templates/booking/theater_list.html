@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Theaters & Multiplexes — CineVerse{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Header -->
+    <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+        <div>
+            <h2 class="fw-bold text-white mb-1">
+                <i class="fa-solid fa-building-user text-danger me-2"></i>Cinema Theaters & Multiplexes
+            </h2>
+            <p class="text-secondary mb-0">
+                Explore top theaters{% if selected_city %} in <strong class="text-white">📍 {{ selected_city }}</strong>{% endif %}, check facilities & book showtimes.
+            </p>
+        </div>
+        {% if selected_city %}
+            <a href="{% url 'theater_list' %}" class="btn btn-sm btn-outline-glass text-danger"><i class="fa-solid fa-xmark me-1"></i>Clear City Filter</a>
+        {% endif %}
+    </div>
+
+    <!-- City Selector Pills -->
+    <div class="mb-4 d-flex align-items-center gap-2 overflow-auto py-2" style="white-space: nowrap; -webkit-overflow-scrolling: touch;">
+        <span class="text-secondary small fw-bold text-uppercase me-1"><i class="fa-solid fa-filter me-1"></i>City:</span>
+        <a href="{% url 'theater_list' %}" class="genre-pill {% if not selected_city %}bg-danger text-white border-danger{% endif %} px-3 py-2 fs-6">All Cities</a>
+        {% for c in cities %}
+            <a href="{% url 'theater_list' %}?city={{ c }}" class="genre-pill {% if selected_city|lower == c|lower %}bg-danger text-white border-danger{% endif %} px-3 py-2 fs-6">📍 {{ c }}</a>
+        {% endfor %}
+    </div>
+
+    <!-- Theater Search & Filter Bar -->
+    <div class="p-3 mb-4 glass">
+        <form method="GET" action="{% url 'theater_list' %}" class="row g-3 align-items-center">
+            {% if selected_city %}
+                <input type="hidden" name="city" value="{{ selected_city }}">
+            {% endif %}
+            <div class="col-md-9">
+                <div class="input-group">
+                    <span class="input-group-text bg-transparent border-end-0 text-secondary" style="border-color: var(--glass-border) !important;">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                    </span>
+                    <input type="text" name="q" value="{{ search_q|default:'' }}" class="form-control form-control-cineverse border-start-0 ps-0" placeholder="Search theater name, location, address, Dolby Atmos...">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-accent w-100 fw-bold">Search Theaters</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Theater Card Grid -->
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 mb-5">
+        {% for theater in theaters %}
+            <div class="col">
+                <div class="theater-card glass-reflection d-flex flex-column">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div>
+                            <span class="badge bg-secondary mb-1">📍 {{ theater.city }}</span>
+                            <h5 class="fw-bold text-white mb-0">
+                                <a href="{% url 'theater_detail' theater.id %}" class="text-white hover-accent">{{ theater.name }}</a>
+                            </h5>
+                        </div>
+                        <span class="badge bg-danger px-2 py-1"><i class="fa-solid fa-desktop me-1"></i>{{ theater.total_screens }} Screen{{ theater.total_screens|pluralize }}</span>
+                    </div>
+
+                    <p class="text-secondary small mb-3">
+                        <i class="fa-solid fa-location-dot text-danger me-1"></i>{{ theater.location }}<br>
+                        <span class="text-muted">{{ theater.address }}</span>
+                    </p>
+
+                    <!-- Facility Badges -->
+                    {% if theater.facilities %}
+                        <div class="d-flex flex-wrap gap-1 mb-3">
+                            {% for facility in theater.facilities.split %}
+                                <span class="facility-badge">{{ facility|cut:"," }}</span>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    <div class="mt-auto pt-3 border-top border-secondary d-flex align-items-center justify-content-between">
+                        <span class="small text-secondary">
+                            <i class="fa-solid fa-calendar-check text-success me-1"></i>{{ theater.active_shows_count }} Active Show{{ theater.active_shows_count|pluralize }}
+                        </span>
+                        <a href="{% url 'theater_detail' theater.id %}" class="btn btn-accent btn-sm fw-bold px-3">
+                            View Shows <i class="fa-solid fa-arrow-right ms-1"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        {% empty %}
+            <div class="col-12">
+                <div class="empty-state">
+                    <i class="fa-solid fa-building-circle-xmark"></i>
+                    <h4>No Theaters Found</h4>
+                    <p>No theaters matched your criteria{% if selected_city %} in {{ selected_city }}{% endif %}. Try selecting another city or clearing your search.</p>
+                    <a href="{% url 'theater_list' %}" class="btn btn-outline-glass mt-2">Reset Filters</a>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

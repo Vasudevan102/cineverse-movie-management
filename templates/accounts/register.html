@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% block title %}Create Account — CineVerse{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 540px;">
+    <div class="aurora-card p-4 p-md-5">
+        <div class="text-center mb-4">
+            <i class="fa-solid fa-user-plus fa-3x mb-2" style="color: var(--cyan);"></i>
+            <h3 class="fw-bold text-white mb-1">Create Account</h3>
+            <p class="text-secondary small">Join CineVerse to book cinema tickets & post verified reviews.</p>
+        </div>
+
+        <form method="POST" action="{% url 'register' %}">
+            {% csrf_token %}
+
+            {% for field in form %}
+                <div class="mb-3">
+                    <label class="form-label text-white fw-semibold">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.errors %}
+                        <div class="text-pink small mt-1" style="color: var(--pink);">{{ field.errors.0 }}</div>
+                    {% endif %}
+                    {% if field.help_text %}
+                        <div class="form-text text-secondary small">{{ field.help_text }}</div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+
+            <div class="d-grid gap-2 mb-3 mt-4">
+                <button type="submit" class="btn btn-aurora btn-lg fw-bold">Register Account</button>
+            </div>
+        </form>
+
+        <div class="text-center border-top border-secondary pt-3 mt-2">
+            <span class="text-secondary small">Already have an account?</span>
+            <a href="{% url 'login' %}" class="fw-bold text-decoration-none ms-1" style="color: var(--purple);">Sign In</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

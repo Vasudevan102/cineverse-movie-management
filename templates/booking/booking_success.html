@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Booking Confirmed — {{ booking.booking_reference }} | CineVerse{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 720px;">
+    <!-- Success Banner Animation -->
+    <div class="text-center my-4 animate-fade-up">
+        <div class="d-inline-flex align-items-center justify-content-center bg-success text-white rounded-circle shadow-lg mb-3 animate-checkmark" style="width: 80px; height: 80px; font-size: 2.5rem; box-shadow: 0 0 25px var(--success) !important;">
+            <i class="fa-solid fa-check"></i>
+        </div>
+        <h2 class="fw-bold text-white mb-1">Payment Successful!</h2>
+        <p class="text-success fs-5 fw-semibold mb-0">Your cinema ticket is confirmed</p>
+    </div>
+
+    <!-- Digital Ticket Card -->
+    <div class="p-4 mb-4 glass glass-reflection border border-danger rounded-4 shadow-lg position-relative overflow-hidden">
+        <!-- Top Ticket Header -->
+        <div class="d-flex justify-content-between align-items-center pb-3 mb-3 border-bottom border-secondary">
+            <div class="d-flex align-items-center gap-2">
+                <i class="fa-solid fa-film text-danger fs-3"></i>
+                <div>
+                    <h5 class="fw-bold text-white mb-0" style="letter-spacing: 1px;">CINEVERSE TICKET</h5>
+                    <small class="text-muted">Digital Cinema Pass</small>
+                </div>
+            </div>
+            <span class="badge bg-success px-3 py-2 fs-6">CONFIRMED</span>
+        </div>
+
+        <div class="row g-4 align-items-center">
+            <!-- Left: Poster Thumbnail -->
+            <div class="col-sm-4 col-md-3 text-center">
+                <div class="poster-wrapper rounded-3 shadow">
+                    {% if booking.show.movie.primary_poster %}
+                        <img src="{{ booking.show.movie.primary_poster }}" alt="{{ booking.show.movie.title }}" class="poster-image">
+                    {% else %}
+                        <div class="poster-fallback p-2">🎬</div>
+                    {% endif %}
+                    <span class="card-cert-badge">{{ booking.show.movie.age_certificate }}</span>
+                </div>
+            </div>
+
+            <!-- Center: Ticket Details -->
+            <div class="col-sm-8 col-md-9">
+                <h3 class="fw-bold text-white mb-2">{{ booking.show.movie.title }}</h3>
+
+                <div class="mb-3">
+                    <div class="text-secondary mb-1">
+                        <i class="fa-solid fa-building-user text-danger me-2"></i>
+                        <strong class="text-white">{{ booking.show.theater.name }}</strong> ({{ booking.show.screen }})
+                    </div>
+                    <div class="text-secondary mb-1">
+                        <i class="fa-solid fa-location-dot text-danger me-2"></i>
+                        <span>{{ booking.show.theater.location }}, {{ booking.show.theater.city }}</span>
+                    </div>
+                    <div class="text-warning mb-1">
+                        <i class="fa-regular fa-clock me-2"></i>
+                        <strong>{{ booking.show.show_date|date:"D, M d, Y" }} at {{ booking.show.start_time|time:"h:i A" }}</strong>
+                    </div>
+                </div>
+
+                <div class="row g-2 p-3 rounded-3 bg-dark border border-secondary mb-3">
+                    <div class="col-6">
+                        <small class="text-secondary d-block">Seats Reserved:</small>
+                        <strong class="text-white fs-5">{{ booking.selected_seats|default:booking.number_of_seats }}</strong>
+                    </div>
+                    <div class="col-6 text-end">
+                        <small class="text-secondary d-block">Total Paid:</small>
+                        <strong class="text-success fs-5">₹{% if payment %}{{ payment.total_amount|floatformat:0 }}{% else %}{{ booking.total_amount|floatformat:0 }}{% endif %}</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ticket Divider Perforations -->
+        <div class="my-4 border-top border-dashed border-secondary position-relative">
+            <div class="position-absolute top-50 start-0 translate-middle-y bg-dark rounded-circle" style="width: 24px; height: 24px; left: -26px !important;"></div>
+            <div class="position-absolute top-50 end-0 translate-middle-y bg-dark rounded-circle" style="width: 24px; height: 24px; right: -26px !important;"></div>
+        </div>
+
+        <!-- Ticket Footer & QR Code Section -->
+        <div class="row align-items-center g-3 pt-2">
+            <div class="col-md-7">
+                <small class="text-muted d-block text-uppercase" style="letter-spacing: 1px;">Booking Reference ID:</small>
+                <code class="fs-4 text-warning fw-bold d-block mb-1">{{ booking.booking_reference }}</code>
+                <small class="text-secondary"><i class="fa-solid fa-circle-check text-success me-1"></i>Verified & Validated Entry Ticket</small>
+            </div>
+
+            <div class="col-md-5 text-md-end text-center">
+                <!-- Decorative Ticket QR Code Graphic -->
+                <div class="p-2 bg-white d-inline-block rounded-3 shadow">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="90" height="90" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="3" width="7" height="7"></rect>
+                        <rect x="3" y="14" width="7" height="7"></rect>
+                        <line x1="14" y1="14" x2="14.01" y2="14"></line>
+                        <line x1="14" y1="17" x2="17" y2="17"></line>
+                        <line x1="17" y1="14" x2="21" y2="14"></line>
+                        <line x1="20" y1="17" x2="20.01" y2="17"></line>
+                        <line x1="14" y1="21" x2="21" y2="21"></line>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="d-flex justify-content-center gap-3 flex-wrap mb-5">
+        <button type="button" onclick="window.print();" class="btn btn-outline-glass btn-lg px-4">
+            <i class="fa-solid fa-print me-2"></i>Print Ticket
+        </button>
+        <a href="{% url 'my_bookings' %}" class="btn btn-accent btn-lg px-4">
+            <i class="fa-solid fa-ticket me-2"></i>View My Bookings
+        </a>
+    </div>
+</div>
+
+<style>
+@keyframes scaleGlow {
+    0% { transform: scale(0.3); opacity: 0; }
+    60% { transform: scale(1.15); opacity: 1; }
+    100% { transform: scale(1); }
+}
+</style>
+{% endblock %}

@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block title %}Report Review - CineVerse{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 600px;">
+    <div class="card p-4 rounded-3 shadow-lg" style="background-color: var(--bg-card); border: 1px solid var(--border-color);">
+        <h3 class="fw-bold text-white mb-2 text-center"><i class="fa-solid fa-flag text-danger me-2"></i>Report Review</h3>
+        <p class="text-secondary text-center mb-4">Report inappropriate content for <strong>{{ review.movie.title }}</strong></p>
+
+        <div class="p-3 text-white mb-4 rounded-3" style="background-color: var(--bg-secondary); border: 1px solid var(--border-color);">
+            <small class="text-secondary">Reviewed by <strong>{{ review.user.username }}</strong></small>
+            <p class="mb-0 mt-1">"{{ review.comment }}"</p>
+        </div>
+
+        <form method="POST" action="{% url 'review_report' review.id %}">
+            {% csrf_token %}
+            <div class="mb-4">
+                <label class="form-label text-white fw-semibold">Reason for Reporting</label>
+                {{ form.reason }}
+                {% if form.reason.errors %}
+                    <div class="text-danger small mt-1">{{ form.reason.errors.0 }}</div>
+                {% endif %}
+            </div>
+
+            <div class="d-grid gap-2">
+                <button type="submit" class="btn btn-accent btn-lg fw-bold">Submit Report</button>
+                <a href="{% url 'movie_detail' review.movie.slug %}" class="btn btn-outline-glass">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

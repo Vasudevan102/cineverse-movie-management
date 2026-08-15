@@ -1,0 +1,320 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ movie.title }} — CineVerse{% endblock %}
+
+{% block content %}
+<div class="container" data-genre="{{ movie.genres.first.slug|default:'action' }}">
+    <!-- ====== Movie Overview Banner ====== -->
+    <div class="aurora-card p-4 p-md-5 mb-5 position-relative overflow-hidden">
+        <div class="row g-4 align-items-center">
+            <!-- Left: Poster -->
+            <div class="col-md-4 col-lg-3 text-center">
+                <div class="hero-poster-wrapper shadow-lg">
+                    {% if movie.primary_poster %}
+                        <img src="{{ movie.primary_poster }}" alt="{{ movie.title }} poster" class="poster-image rounded-3">
+                    {% else %}
+                        <div class="poster-fallback p-4 text-center">
+                            <i class="fa-solid fa-clapperboard fs-1 text-purple mb-2"></i>
+                            <h5 class="fw-bold text-white mb-1">{{ movie.title }}</h5>
+                            <small class="text-secondary">{{ movie.language.name }}</small>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Right: Details -->
+            <div class="col-md-8 col-lg-9 d-flex flex-column">
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
+                    <h1 class="fw-bold text-white mb-0" style="font-size: clamp(1.8rem, 4.5vw, 3.2rem);">{{ movie.title }}</h1>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="fs-4 text-warning fw-bold"><i class="fa-solid fa-star me-1"></i>{{ movie.average_rating }}</span>
+                        <span class="text-secondary small">/ 5 ({{ movie.total_reviews }} review{{ movie.total_reviews|pluralize }})</span>
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-center gap-2 mb-3 flex-wrap">
+                    <span class="badge bg-dark text-white border border-secondary px-3 py-2 fs-6">{{ movie.age_certificate }}</span>
+                    <span class="meta-pill"><i class="fa-regular fa-clock me-1 text-warning"></i>{{ movie.formatted_duration }}</span>
+                    <span class="meta-pill"><i class="fa-solid fa-calendar me-1 text-purple"></i>{{ movie.release_date|date:"F d, Y" }}</span>
+                    <span class="meta-pill"><i class="fa-solid fa-language me-1 text-cyan"></i>{{ movie.language.name }}</span>
+                    <span class="meta-pill"><i class="fa-solid fa-user-ninja me-1 text-pink"></i>Director: <strong>{{ movie.director }}</strong></span>
+                </div>
+
+                <div class="mb-3">
+                    {% for genre in movie.genres.all %}
+                        <a href="{% url 'genre_movies' genre.slug %}" class="meta-pill text-white px-3 py-2 fs-6 mb-1 me-1 d-inline-block">{{ genre.name }}</a>
+                    {% endfor %}
+                </div>
+
+                <h5 class="text-white fw-bold mb-2">Storyline</h5>
+                <p class="text-secondary fs-6 mb-4" style="line-height: 1.75;">{{ movie.description }}</p>
+
+                <!-- Action Buttons -->
+                <div class="mt-auto d-flex gap-3 flex-wrap align-items-center">
+                    <a href="{% url 'show_list' %}?movie={{ movie.slug }}" class="btn btn-aurora btn-lg px-4 fw-bold">
+                        <i class="fa-solid fa-ticket me-2"></i>Book Tickets Now
+                    </a>
+                    {% if movie.youtube_embed_url %}
+                        <a href="#official-trailer" class="btn btn-outline-glass btn-lg px-4">
+                            <i class="fa-solid fa-play me-2 text-cyan"></i>Watch Trailer
+                        </a>
+                    {% endif %}
+                    {% if review_status.can_review %}
+                        <a href="{% url 'review_create' movie.id %}" class="btn btn-outline-glass btn-lg px-4" style="border-color: var(--accent-gold); color: var(--accent-gold);">
+                            <i class="fa-solid fa-pen-to-square me-2"></i>Write Review
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== Official Trailer ====== -->
+    {% if movie.youtube_embed_url %}
+    <section id="official-trailer" class="mb-5 animate-fade-up">
+        <div class="section-header">
+            <h3 class="section-title"><i class="fa-brands fa-youtube"></i>Official Trailer</h3>
+        </div>
+        <div class="ratio-16x9-trailer">
+            <iframe 
+                src="{{ movie.youtube_embed_url }}" 
+                title="{{ movie.title }} Official Trailer" 
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                referrerpolicy="strict-origin-when-cross-origin" 
+                allowfullscreen>
+            </iframe>
+        </div>
+    </section>
+    {% endif %}
+
+    <!-- ====== Poster Gallery ====== -->
+    {% if movie.images.all %}
+    <section class="mb-5 animate-fade-up">
+        <div class="section-header">
+            <h3 class="section-title"><i class="fa-solid fa-images"></i>Poster Gallery</h3>
+        </div>
+        <div class="row row-cols-2 row-cols-md-4 row-cols-lg-6 g-3">
+            {% for img in movie.images.all %}
+                <div class="col">
+                    <div class="overflow-hidden h-100" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+                        <img src="{{ img.image.url }}" alt="{{ img.caption|default:movie.title }}" class="img-fluid" style="border-radius: var(--radius-md); width: 100%; object-fit: cover;" loading="lazy">
+                        {% if img.caption %}
+                            <div class="p-2 small text-muted text-center text-truncate">{{ img.caption }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    <!-- ====== Cast Section ====== -->
+    {% if movie.cast.all %}
+    <section class="mb-5 animate-fade-up">
+        <div class="section-header">
+            <h3 class="section-title"><i class="fa-solid fa-users"></i>Meet the Cast</h3>
+        </div>
+        <div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-6 g-3">
+            {% for member in movie.cast.all %}
+                <div class="col">
+                    <div class="text-center p-3 h-100" style="background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); transition: transform var(--transition-base), box-shadow var(--transition-base);">
+                        {% if member.photo %}
+                            <img src="{{ member.photo.url }}" alt="{{ member.name }}" class="rounded-circle mx-auto mb-2" style="width: 80px; height: 80px; object-fit: cover; border: 2px solid var(--accent);">
+                        {% else %}
+                            <div class="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-2 text-light fs-3" style="width: 80px; height: 80px; background: var(--bg-secondary); border: 2px solid var(--border-color);">
+                                <i class="fa-solid fa-user"></i>
+                            </div>
+                        {% endif %}
+                        <h6 class="text-white fw-bold mb-1 text-truncate" style="font-size: 0.88rem;">{{ member.name }}</h6>
+                        <small class="text-muted text-truncate d-block" style="font-size: 0.78rem;">{{ member.character_name }}</small>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    <!-- ====== Upcoming Shows ====== -->
+    <section class="mb-5 animate-fade-up">
+        <div class="section-header">
+            <h3 class="section-title"><i class="fa-solid fa-building-user"></i>Upcoming Shows & Schedules</h3>
+            <a href="{% url 'show_list' %}?movie={{ movie.slug }}" class="btn btn-sm btn-outline-glass">View All Cities</a>
+        </div>
+        <div class="row g-3">
+            {% for show in shows %}
+                <div class="col-md-6 col-lg-4">
+                    <div class="p-3 h-100 glass glass-reflection">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div>
+                                <span class="badge bg-secondary mb-1">📍 {{ show.theater.city }}</span>
+                                <h6 class="fw-bold text-white mb-0"><i class="fa-solid fa-location-dot text-danger me-1"></i>{{ show.theater.name }}</h6>
+                                <p class="small text-secondary mb-0">{{ show.theater.location }} ({{ show.screen }})</p>
+                            </div>
+                            <span class="fs-5 fw-bold text-success">₹{{ show.ticket_price|floatformat:0 }}</span>
+                        </div>
+
+                        <!-- Occupancy indicator -->
+                        <div class="p-2 my-2 rounded bg-dark border border-secondary">
+                            <div class="d-flex justify-content-between align-items-center small mb-1">
+                                <span class="text-secondary fw-semibold">{{ show.occupancy_percent }}% Booked</span>
+                                <span class="badge {% if show.occupancy_percent >= 90 %}bg-danger{% elif show.occupancy_percent >= 70 %}bg-warning text-dark{% else %}bg-success{% endif %}">
+                                    {{ show.occupancy_status }}
+                                </span>
+                            </div>
+                            <div class="progress" style="height: 5px; background: rgba(255,255,255,0.08);">
+                                <div class="progress-bar {% if show.occupancy_percent >= 90 %}bg-danger{% elif show.occupancy_percent >= 70 %}bg-warning{% else %}bg-success{% endif %}" data-width="{{ show.occupancy_percent }}%"></div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center mt-3 pt-2" style="border-top: 1px solid var(--border-color);">
+                            <div>
+                                <span class="text-white fw-semibold small"><i class="fa-regular fa-clock me-1 text-warning"></i>{{ show.show_date|date:"D, M d" }} at {{ show.start_time|time:"h:i A" }}</span>
+                                <div class="small text-muted">{{ show.available_seats }} seats left</div>
+                            </div>
+                            <a href="{% url 'booking_create' show.id %}" class="btn btn-accent btn-sm fw-bold">Select Seats</a>
+                        </div>
+                    </div>
+                </div>
+            {% empty %}
+                <div class="col-12">
+                    <div class="empty-state">
+                        <i class="fa-solid fa-calendar-xmark"></i>
+                        <h5>No Active Shows</h5>
+                        <p>No showtimes currently scheduled. Check back soon!</p>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <!-- ====== Ratings & Reviews ====== -->
+    <section class="mb-5 animate-fade-up">
+        <div class="section-header">
+            <h3 class="section-title"><i class="fa-solid fa-comments"></i>Ratings & Viewer Reviews</h3>
+            {% if review_status.can_review %}
+                <a href="{% url 'review_create' movie.id %}" class="btn btn-accent fw-bold">
+                    <i class="fa-solid fa-star me-1"></i>Write Review
+                </a>
+            {% elif review_status.existing_review %}
+                <a href="{% url 'review_edit' review_status.existing_review.id %}" class="btn btn-outline-glass" style="border-color: var(--accent-gold); color: var(--accent-gold);">
+                    <i class="fa-solid fa-pen me-1"></i>Edit Your Review
+                </a>
+            {% endif %}
+        </div>
+
+        <!-- Rating Breakdown Card -->
+        <div class="p-4 mb-4" style="background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg);">
+            <div class="row align-items-center g-4">
+                <div class="col-md-4 text-center border-end-md">
+                    <div class="display-3 fw-bold text-white mb-1">{{ movie.average_rating }}</div>
+                    <div class="fs-5 text-warning mb-2">
+                        {% with avg=movie.average_rating %}
+                        {% for i in "12345" %}
+                            {% if forloop.counter <= avg %}
+                                <i class="fa-solid fa-star"></i>
+                            {% elif forloop.counter|add:"-1" < avg %}
+                                <i class="fa-solid fa-star-half-stroke"></i>
+                            {% else %}
+                                <i class="fa-regular fa-star" style="opacity:0.3;"></i>
+                            {% endif %}
+                        {% endfor %}
+                        {% endwith %}
+                    </div>
+                    <p class="text-muted small mb-0">Based on {{ movie.total_reviews }} verified review{{ movie.total_reviews|pluralize }}</p>
+                </div>
+
+                <div class="col-md-8">
+                    <h6 class="text-white fw-bold mb-3">Rating Breakdown</h6>
+                    {% for item in movie.rating_breakdown %}
+                        <div class="rating-bar-container">
+                            <span class="small text-secondary fw-semibold" style="width: 45px;">{{ item.star }} <i class="fa-solid fa-star text-warning" style="font-size:0.65rem;"></i></span>
+                            <div class="rating-bar-bg">
+                                <div class="rating-bar-fill" data-width="{{ item.percent }}%"></div>
+                            </div>
+                            <span class="small text-secondary" style="width: 36px; text-align: right;">{{ item.count }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        {% if not review_status.can_review and not review_status.existing_review %}
+            <div class="d-flex align-items-center p-3 mb-4" style="background: rgba(255,193,7,0.06); border: 1px solid rgba(255,193,7,0.15); border-radius: var(--radius-md);">
+                <i class="fa-solid fa-shield-cat fa-2x text-warning me-3"></i>
+                <div>
+                    <strong class="text-white">Verified Viewer Reviews Only</strong><br>
+                    <span class="text-secondary small">To submit a review, you must register, book tickets, and watch the show. {{ review_status.reason }}</span>
+                </div>
+            </div>
+        {% endif %}
+
+        <!-- Reviews List -->
+        <div class="row g-3">
+            {% for rev in reviews %}
+                <div class="col-12">
+                    <div class="p-3" style="background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div>
+                                <div class="d-flex align-items-center gap-2 flex-wrap">
+                                    <strong class="text-white"><i class="fa-solid fa-circle-user text-secondary me-1"></i>{{ rev.user.username }}</strong>
+                                    {% if rev.verified_viewer %}
+                                        <span class="verified-viewer-glow" title="Verified Ticket Holder">
+                                            <i class="fa-solid fa-circle-check"></i> Verified Viewer
+                                        </span>
+                                    {% endif %}
+                                </div>
+                                <div class="text-muted small mt-1">{{ rev.created_at|date:"F d, Y — h:i A" }}</div>
+                            </div>
+                            <div class="text-warning">
+                                {% for i in "12345" %}
+                                    {% if forloop.counter <= rev.rating %}
+                                        <i class="fa-solid fa-star"></i>
+                                    {% else %}
+                                        <i class="fa-regular fa-star" style="opacity: 0.3;"></i>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <p class="text-white mb-3 mt-2 fs-6" style="line-height: 1.65;">{{ rev.comment }}</p>
+
+                        <div class="d-flex gap-2 justify-content-end pt-2" style="border-top: 1px solid var(--border-color);">
+                            {% if request.user == rev.user %}
+                                <a href="{% url 'review_edit' rev.id %}" class="btn btn-sm btn-outline-glass"><i class="fa-solid fa-pen me-1"></i>Edit</a>
+                                <a href="{% url 'review_delete' rev.id %}" class="btn btn-sm btn-outline-glass" style="color: var(--accent);"><i class="fa-solid fa-trash me-1"></i>Delete</a>
+                            {% else %}
+                                <a href="{% url 'review_report' rev.id %}" class="btn btn-sm btn-outline-glass text-muted"><i class="fa-solid fa-flag me-1"></i>Report</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% empty %}
+                <div class="col-12">
+                    <div class="empty-state">
+                        <i class="fa-solid fa-comments"></i>
+                        <h5>No Reviews Yet</h5>
+                        <p>Be the first verified viewer to share your thoughts about {{ movie.title }}!</p>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <!-- ====== Similar Movies ====== -->
+    {% if similar_movies %}
+    <section class="mb-5 animate-fade-up">
+        <div class="section-header">
+            <h3 class="section-title"><i class="fa-solid fa-wand-magic-sparkles"></i>You Might Also Like</h3>
+        </div>
+        <div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-6 g-3">
+            {% for rec_movie in similar_movies %}
+                <div class="col">
+                    {% include 'movies/_movie_card.html' with movie=rec_movie %}
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+</div>
+{% endblock %}

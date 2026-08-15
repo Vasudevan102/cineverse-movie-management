@@ -1,0 +1,248 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}CineVerse — Modern Liquid Glass Cinema Platform{% endblock %}
+
+{% block content %}
+<div class="container">
+    {% if carousel_movies %}
+    <!-- ====== Top Auto Movie Carousel ====== -->
+    <div id="heroCarousel" class="hero-carousel-container my-4" aria-label="Featured Movies Carousel" tabindex="0">
+        <div class="hero-carousel-slides">
+            {% for movie in carousel_movies %}
+                <div class="hero-carousel-slide {% if forloop.first %}active{% endif %}" data-slide-index="{{ forloop.counter0 }}">
+                    {% if movie.backdrop_url %}
+                        <img src="{{ movie.backdrop_url }}" alt="{{ movie.title }} backdrop" class="hero-backdrop" loading="{% if forloop.first %}eager{% else %}lazy{% endif %}">
+                    {% elif movie.primary_poster %}
+                        <img src="{{ movie.primary_poster }}" alt="{{ movie.title }} backdrop" class="hero-backdrop" loading="{% if forloop.first %}eager{% else %}lazy{% endif %}">
+                    {% else %}
+                        <div class="hero-backdrop hero-placeholder-fallback"></div>
+                    {% endif %}
+                    <div class="hero-overlay-gradient"></div>
+
+                    <div class="hero-content">
+                        <div class="row align-items-center g-4">
+                            <div class="col-lg-7 col-md-8">
+                                <div class="mb-3 d-flex align-items-center gap-2 flex-wrap">
+                                    <span class="badge-now-showing">
+                                        <i class="fa-solid fa-sparkles me-1 text-cyan"></i> FEATURED SPOTLIGHT
+                                    </span>
+                                    {% if selected_city %}
+                                        <span class="badge bg-dark border border-secondary text-secondary">📍 {{ selected_city }}</span>
+                                    {% endif %}
+                                </div>
+
+                                <h1 class="hero-movie-title fw-bold mb-3 fade-up">{{ movie.title }}</h1>
+
+                                <div class="d-flex align-items-center gap-2 mb-3 flex-wrap fade-in">
+                                    <span class="rating-pill"><i class="fa-solid fa-star me-1"></i>{{ movie.average_rating|default:"5.0" }}</span>
+                                    <span class="meta-pill"><i class="fa-solid fa-shield-halved me-1 text-pink"></i>{{ movie.age_certificate }}</span>
+                                    <span class="meta-pill"><i class="fa-regular fa-clock me-1 text-warning"></i>{{ movie.formatted_duration }}</span>
+                                    <span class="meta-pill"><i class="fa-solid fa-language me-1 text-cyan"></i>{{ movie.language.name }}</span>
+                                    <span class="meta-pill"><i class="fa-solid fa-calendar me-1 text-purple"></i>{{ movie.release_date|date:"Y" }}</span>
+                                </div>
+
+                                <p class="hero-description mb-4 slide-right">
+                                    {{ movie.description|truncatewords:30 }}
+                                </p>
+
+                                <div class="d-flex gap-3 flex-wrap align-items-center fade-up">
+                                    <a href="{% url 'show_list' %}?movie={{ movie.slug }}{% if selected_city %}&city={{ selected_city }}{% endif %}" class="btn btn-aurora btn-lg px-4 fw-bold">
+                                        <i class="fa-solid fa-ticket me-2"></i>Book Tickets
+                                    </a>
+                                    {% if movie.youtube_embed_url %}
+                                    <a href="{% url 'movie_detail' movie.slug %}#official-trailer" class="btn btn-outline-glass btn-lg px-4">
+                                        <i class="fa-solid fa-play me-2 text-cyan"></i>Watch Trailer
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <!-- Right: Floating Poster Image (Desktop/Tablet) -->
+                            <div class="col-lg-4 col-md-4 offset-lg-1 d-none d-md-block text-center scale-in">
+                                <div class="hero-poster-wrapper">
+                                    {% if movie.primary_poster %}
+                                        <img src="{{ movie.primary_poster }}" alt="{{ movie.title }} poster" class="hero-poster-img img-fluid">
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <!-- Carousel Navigation Controls (Small Circular Glass Buttons) -->
+        <button type="button" class="hero-carousel-control prev-btn" aria-label="Previous Slide">
+            ‹
+        </button>
+        <button type="button" class="hero-carousel-control next-btn" aria-label="Next Slide">
+            ›
+        </button>
+
+        <!-- Active Dot Indicators (Pill Transition) -->
+        <div class="hero-carousel-dots">
+            {% for movie in carousel_movies %}
+                <button type="button" class="hero-carousel-dot {% if forloop.first %}active{% endif %}" data-target-slide="{{ forloop.counter0 }}" aria-label="Go to slide {{ forloop.counter }}"></button>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- City Filter Indicator Bar -->
+    <div class="d-flex align-items-center justify-content-between p-3 mb-4 glass flex-wrap gap-2">
+        <div class="d-flex align-items-center gap-2">
+            <i class="fa-solid fa-location-dot text-danger fs-5"></i>
+            <span class="text-white font-weight-semibold">Selected Location:</span>
+            <strong class="text-danger fs-6">📍 {{ selected_city|default:"Chennai (Default)" }}</strong>
+        </div>
+        <button type="button" class="btn btn-sm btn-outline-glass" data-bs-toggle="modal" data-bs-target="#citySelectorModal">
+            Change City <i class="fa-solid fa-rotate ms-1"></i>
+        </button>
+    </div>
+
+    <!-- ====== 🔥 Trending Movies ====== -->
+    <section class="mb-5">
+        <div class="section-header">
+            <h3 class="section-title">
+                <i class="fa-solid fa-fire"></i>
+                Trending {% if selected_city %}in {{ selected_city }}{% else %}Near You{% endif %}
+            </h3>
+            <a href="{% url 'movie_list' %}?sort_by=-average_rating" class="btn btn-sm btn-outline-glass">View All <i class="fa-solid fa-arrow-right ms-1"></i></a>
+        </div>
+        <div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-6 g-3">
+            {% for movie in trending_movies %}
+                <div class="col">
+                    {% include 'movies/_movie_card.html' with movie=movie %}
+                </div>
+            {% empty %}
+                <div class="col-12">
+                    <div class="empty-state">
+                        <i class="fa-solid fa-fire"></i>
+                        <h5>No Trending Movies</h5>
+                        <p>Check back soon for what's trending.</p>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <!-- ====== 🎬 Now Showing in City ====== -->
+    <section class="mb-5">
+        <div class="section-header">
+            <h3 class="section-title">
+                <i class="fa-solid fa-clapperboard"></i>
+                Now Showing {% if selected_city %}in {{ selected_city }}{% else %}in Cinemas{% endif %}
+            </h3>
+            <a href="{% url 'movie_list' %}" class="btn btn-sm btn-outline-glass">Explore Catalog <i class="fa-solid fa-arrow-right ms-1"></i></a>
+        </div>
+        <div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-6 g-3">
+            {% for movie in now_showing %}
+                <div class="col">
+                    {% include 'movies/_movie_card.html' with movie=movie %}
+                </div>
+            {% empty %}
+                <div class="col-12">
+                    <div class="empty-state">
+                        <i class="fa-solid fa-clapperboard"></i>
+                        <h5>No Movies Showing</h5>
+                        <p>No active shows currently scheduled{% if selected_city %} in {{ selected_city }}{% endif %}.</p>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <!-- ====== ✨ Recently Released ====== -->
+    <section class="mb-5">
+        <div class="section-header">
+            <h3 class="section-title"><i class="fa-solid fa-sparkles"></i>Recently Released</h3>
+            <a href="{% url 'movie_list' %}?sort_by=-release_date" class="btn btn-sm btn-outline-glass">View All <i class="fa-solid fa-arrow-right ms-1"></i></a>
+        </div>
+        <div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-6 g-3">
+            {% for movie in recently_released %}
+                <div class="col">
+                    {% include 'movies/_movie_card.html' with movie=movie %}
+                </div>
+            {% empty %}
+                <div class="col-12">
+                    <div class="empty-state">
+                        <i class="fa-solid fa-sparkles"></i>
+                        <h5>No Recent Releases</h5>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <!-- ====== 🏢 Browse Theaters by City ====== -->
+    <section class="mb-5">
+        <div class="section-header">
+            <h3 class="section-title"><i class="fa-solid fa-building-user"></i>Popular Cinema Theaters</h3>
+            <a href="{% url 'theater_list' %}" class="btn btn-sm btn-outline-glass">View All Theaters <i class="fa-solid fa-arrow-right ms-1"></i></a>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            <a href="{% url 'theater_list' %}?city=Chennai" class="btn btn-outline-glass px-4 py-2">📍 Chennai Theaters</a>
+            <a href="{% url 'theater_list' %}?city=Coimbatore" class="btn btn-outline-glass px-4 py-2">📍 Coimbatore Theaters</a>
+            <a href="{% url 'theater_list' %}?city=Bengaluru" class="btn btn-outline-glass px-4 py-2">📍 Bengaluru Theaters</a>
+            <a href="{% url 'theater_list' %}?city=Hyderabad" class="btn btn-outline-glass px-4 py-2">📍 Hyderabad Theaters</a>
+            <a href="{% url 'theater_list' %}" class="btn btn-accent px-4 py-2">Explore All Cities</a>
+        </div>
+    </section>
+
+    <!-- ====== 🏷 Browse by Genre ====== -->
+    <section class="mb-5">
+        <div class="section-header">
+            <h3 class="section-title"><i class="fa-solid fa-tags"></i>Browse by Genre</h3>
+        </div>
+        <div class="genre-tile-grid">
+            <a href="{% url 'genre_movies' 'action' %}" class="genre-card-tile">
+                <span class="fs-2">🎬</span>
+                <span class="fw-bold">Action</span>
+            </a>
+            <a href="{% url 'genre_movies' 'comedy' %}" class="genre-card-tile">
+                <span class="fs-2">😂</span>
+                <span class="fw-bold">Comedy</span>
+            </a>
+            <a href="{% url 'genre_movies' 'horror' %}" class="genre-card-tile">
+                <span class="fs-2">👻</span>
+                <span class="fw-bold">Horror</span>
+            </a>
+            <a href="{% url 'genre_movies' 'romance' %}" class="genre-card-tile">
+                <span class="fs-2">❤️</span>
+                <span class="fw-bold">Romance</span>
+            </a>
+            <a href="{% url 'genre_movies' 'sci-fi' %}" class="genre-card-tile">
+                <span class="fs-2">🚀</span>
+                <span class="fw-bold">Sci-Fi</span>
+            </a>
+            <a href="{% url 'genre_movies' 'thriller' %}" class="genre-card-tile">
+                <span class="fs-2">🔍</span>
+                <span class="fw-bold">Thriller</span>
+            </a>
+            {% for genre in genres %}
+                {% if genre.slug not in "action,comedy,horror,romance,sci-fi,thriller" %}
+                    <a href="{% url 'genre_movies' genre.slug %}" class="genre-card-tile">
+                        <span class="fs-2">🍿</span>
+                        <span class="fw-bold">{{ genre.name }}</span>
+                    </a>
+                {% endif %}
+            {% endfor %}
+        </div>
+    </section>
+
+    <!-- ====== 🌐 Browse by Language ====== -->
+    <section class="mb-5">
+        <div class="section-header">
+            <h3 class="section-title"><i class="fa-solid fa-globe"></i>Browse by Language</h3>
+        </div>
+        <div class="d-flex flex-wrap gap-3">
+            {% for lang in languages %}
+                <a href="{% url 'language_movies' lang.code %}" class="genre-card-link">
+                    <i class="fa-solid fa-language text-warning"></i> {{ lang.name }}
+                </a>
+            {% endfor %}
+        </div>
+    </section>
+</div>
+{% endblock %}

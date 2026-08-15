@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% block title %}User Login — CineVerse{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 480px;">
+    <div class="aurora-card p-4 p-md-5">
+        <div class="text-center mb-4">
+            <i class="fa-solid fa-film fa-3x mb-2" style="color: var(--purple);"></i>
+            <h3 class="fw-bold text-white mb-1">Welcome Back</h3>
+            <p class="text-secondary small">Sign in to your CineVerse account to book tickets & write reviews.</p>
+        </div>
+
+        <form method="POST" action="{% url 'login' %}{% if request.GET.next %}?next={{ request.GET.next }}{% endif %}">
+            {% csrf_token %}
+
+            <div class="mb-3">
+                <label class="form-label text-white fw-semibold">Username</label>
+                <input type="text" name="username" class="form-control form-control-cineverse text-white" placeholder="Enter username" required autofocus style="background: rgba(13, 19, 38, 0.8);">
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label text-white fw-semibold">Password</label>
+                <input type="password" name="password" class="form-control form-control-cineverse text-white" placeholder="Enter password" required style="background: rgba(13, 19, 38, 0.8);">
+            </div>
+
+            <div class="d-grid gap-2 mb-3">
+                <button type="submit" class="btn btn-aurora btn-lg fw-bold">Sign In</button>
+            </div>
+        </form>
+
+        <div class="text-center border-top border-secondary pt-3 mt-2">
+            <span class="text-secondary small">Don't have an account?</span>
+            <a href="{% url 'register' %}" class="fw-bold text-decoration-none ms-1" style="color: var(--cyan);">Register Now</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

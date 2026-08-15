@@ -1,0 +1,77 @@
+<header class="navbar-cineverse-wrapper">
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-cineverse">
+        <div class="container-fluid px-2">
+            <!-- Brand Logo -->
+            <a class="navbar-brand d-flex align-items-center brand-logo" href="{% url 'home' %}">
+                <i class="fa-solid fa-film text-purple me-1" style="color: var(--purple);"></i>
+                <span>Cine</span>Verse
+            </a>
+
+            <!-- Mobile Toggler -->
+            <button class="navbar-toggler border-0 shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent" aria-controls="navbarContent" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <!-- Navbar Links & Controls -->
+            <div class="collapse navbar-collapse" id="navbarContent">
+                <!-- Center Navigation Links -->
+                <ul class="navbar-nav mx-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link nav-link-custom {% if request.resolver_match.url_name == 'home' %}active{% endif %}" href="{% url 'home' %}">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link nav-link-custom {% if request.resolver_match.url_name == 'movie_list' %}active{% endif %}" href="{% url 'movie_list' %}">Movies</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link nav-link-custom {% if request.resolver_match.url_name == 'show_list' %}active{% endif %}" href="{% url 'show_list' %}">Shows</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link nav-link-custom {% if request.resolver_match.url_name == 'theater_list' %}active{% endif %}" href="{% url 'theater_list' %}">Theaters</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link nav-link-custom" href="{% url 'movie_list' %}?sort_by=-average_rating">Trending</a>
+                    </li>
+                </ul>
+
+                <!-- Right Controls: City Selector, Search & Auth -->
+                <div class="d-flex align-items-center gap-2 flex-column flex-lg-row w-100 w-lg-auto">
+                    <!-- City Selector Trigger -->
+                    <button type="button" class="btn btn-city-trigger w-100 w-lg-auto" data-bs-toggle="modal" data-bs-target="#citySelectorModal">
+                        <i class="fa-solid fa-location-dot" style="color: var(--cyan);"></i>
+                        <span id="nav-city-name">{{ selected_city|default:"Chennai" }}</span>
+                        <i class="fa-solid fa-chevron-down small text-muted"></i>
+                    </button>
+
+                    <!-- Search Modal Trigger -->
+                    <button type="button" class="btn btn-outline-glass py-2 px-3 w-100 w-lg-auto" data-bs-toggle="modal" data-bs-target="#globalSearchModal" aria-label="Open search">
+                        <i class="fa-solid fa-magnifying-glass"></i> <span class="d-lg-none ms-1">Search</span>
+                    </button>
+
+                    <!-- User Auth Status -->
+                    {% if user.is_authenticated %}
+                        <div class="dropdown w-100 w-lg-auto">
+                            <a class="btn btn-outline-glass dropdown-toggle d-flex align-items-center justify-content-between gap-2 px-3 py-2 text-start w-100" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <span><i class="fa-solid fa-circle-user me-1" style="color: var(--lavender);"></i>{{ user.username }}</span>
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end shadow-lg aurora-card p-2" aria-labelledby="userDropdown">
+                                <li><a class="dropdown-item py-2 rounded-3 text-white" href="{% url 'profile' %}"><i class="fa-solid fa-user me-2 text-muted"></i>My Profile</a></li>
+                                <li><a class="dropdown-item py-2 rounded-3 text-white" href="{% url 'my_bookings' %}"><i class="fa-solid fa-ticket me-2 text-warning"></i>My Bookings</a></li>
+                                {% if user.is_staff %}
+                                    <li><hr class="dropdown-divider border-secondary opacity-25"></li>
+                                    <li><a class="dropdown-item text-warning py-2 rounded-3" href="/admin/" target="_blank"><i class="fa-solid fa-user-shield me-2"></i>Admin Panel</a></li>
+                                {% endif %}
+                                <li><hr class="dropdown-divider border-secondary opacity-25"></li>
+                                <li><a class="dropdown-item text-danger py-2 rounded-3" href="{% url 'logout' %}"><i class="fa-solid fa-right-from-bracket me-2"></i>Logout</a></li>
+                            </ul>
+                        </div>
+                    {% else %}
+                        <div class="d-flex gap-2 w-100 w-lg-auto">
+                            <a class="btn btn-outline-glass px-3 py-2 w-50 w-lg-auto" href="{% url 'login' %}">Login</a>
+                            <a class="btn btn-accent px-4 py-2 w-50 w-lg-auto" href="{% url 'register' %}">Register</a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+</header>

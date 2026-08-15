@@ -1,0 +1,250 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Checkout & Demo Payment — CineVerse{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 960px;">
+    <!-- Back Navigation -->
+    <div class="mb-3 d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <a href="{% url 'booking_create' booking.show.id %}" class="btn btn-outline-glass btn-sm">
+            <i class="fa-solid fa-arrow-left me-2"></i>Back to Seat Selection
+        </a>
+        <span class="badge bg-dark border border-secondary text-secondary">
+            Step 7 of 8: Payment & Checkout
+        </span>
+    </div>
+
+    <!-- Step Header -->
+    <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+        <div>
+            <h2 class="fw-bold text-white mb-1">
+                <i class="fa-solid fa-credit-card text-danger me-2"></i>Checkout & Payment
+            </h2>
+            <p class="text-secondary mb-0">Select your preferred Indian payment method to confirm your cinema tickets.</p>
+        </div>
+        <span class="badge bg-warning text-dark px-3 py-2 fs-6">
+            <i class="fa-solid fa-shield-halved me-1"></i>Demo Payment Gateway Mode
+        </span>
+    </div>
+
+    {% if payment_failed %}
+        <div class="alert alert-danger border-danger glass p-4 mb-4 rounded-3 text-center">
+            <i class="fa-solid fa-circle-exclamation fa-3x text-danger mb-3"></i>
+            <h4 class="fw-bold text-white mb-2">⚠ Payment Failed</h4>
+            <p class="text-secondary mb-4">Your transaction was not completed. Your seats have not been permanently booked.</p>
+            <div class="d-flex justify-content-center gap-3 flex-wrap">
+                <a href="{% url 'booking_payment' booking.booking_reference %}" class="btn btn-accent px-4 fw-bold">
+                    <i class="fa-solid fa-rotate-right me-2"></i>Try Again
+                </a>
+                <a href="{% url 'booking_create' booking.show.id %}" class="btn btn-outline-glass px-4">
+                    <i class="fa-solid fa-arrow-left me-2"></i>Back to Seat Selection
+                </a>
+            </div>
+        </div>
+    {% endif %}
+
+    <div class="row g-4">
+        <!-- Left Column: Payment Methods Tabs -->
+        <div class="col-lg-7">
+            <div class="p-4 glass">
+                <h5 class="fw-bold text-white mb-3">
+                    <i class="fa-solid fa-wallet text-danger me-2"></i>Select Payment Method
+                </h5>
+
+                <form method="POST" action="{% url 'booking_payment' booking.booking_reference %}" id="payment-gateway-form">
+                    {% csrf_token %}
+                    
+                    <!-- Nav Tabs -->
+                    <ul class="nav nav-pills mb-4 gap-2 border-bottom border-secondary pb-3" id="paymentTab" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active px-3 py-2" id="upi-tab" data-bs-toggle="pill" data-bs-target="#upi" type="button" role="tab" onclick="document.getElementById('selected_method').value='UPI';">
+                                <i class="fa-solid fa-mobile-screen-button me-1"></i>UPI
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link px-3 py-2" id="card-tab" data-bs-toggle="pill" data-bs-target="#card" type="button" role="tab" onclick="document.getElementById('selected_method').value='CARD';">
+                                <i class="fa-solid fa-credit-card me-1"></i>Card
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link px-3 py-2" id="netbanking-tab" data-bs-toggle="pill" data-bs-target="#netbanking" type="button" role="tab" onclick="document.getElementById('selected_method').value='NET_BANKING';">
+                                <i class="fa-solid fa-building-columns me-1"></i>Net Banking
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link px-3 py-2" id="wallet-tab" data-bs-toggle="pill" data-bs-target="#wallet" type="button" role="tab" onclick="document.getElementById('selected_method').value='WALLET';">
+                                <i class="fa-solid fa-wallet me-1"></i>Wallet
+                            </button>
+                        </li>
+                    </ul>
+
+                    <input type="hidden" name="payment_method" id="selected_method" value="UPI">
+                    <input type="hidden" name="payment_action" id="payment_action_input" value="success">
+
+                    <!-- Tab Contents -->
+                    <div class="tab-content" id="paymentTabContent">
+                        <!-- UPI Tab -->
+                        <div class="tab-pane fade show active" id="upi" role="tabpanel">
+                            <div class="p-3 mb-3 rounded-3 bg-dark border border-secondary">
+                                <h6 class="text-white fw-bold mb-2">Instant UPI Payment</h6>
+                                <p class="text-secondary small mb-3">Pay instantly via any Indian UPI application (GPay, PhonePe, Paytm, BHIM).</p>
+                                
+                                <div class="row g-2 mb-3">
+                                    <div class="col-6 col-sm-3">
+                                        <div class="p-2 border rounded text-center text-white bg-dark small">
+                                            <i class="fa-brands fa-google-pay text-danger fs-4 d-block mb-1"></i>Google Pay
+                                        </div>
+                                    </div>
+                                    <div class="col-6 col-sm-3">
+                                        <div class="p-2 border rounded text-center text-white bg-dark small">
+                                            <i class="fa-solid fa-qrcode text-warning fs-4 d-block mb-1"></i>PhonePe
+                                        </div>
+                                    </div>
+                                    <div class="col-6 col-sm-3">
+                                        <div class="p-2 border rounded text-center text-white bg-dark small">
+                                            <i class="fa-solid fa-wallet text-info fs-4 d-block mb-1"></i>Paytm UPI
+                                        </div>
+                                    </div>
+                                    <div class="col-6 col-sm-3">
+                                        <div class="p-2 border rounded text-center text-white bg-dark small">
+                                            <i class="fa-solid fa-building-columns text-success fs-4 d-block mb-1"></i>BHIM
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mb-2">
+                                    <label class="form-label text-secondary small">Enter Virtual Payment Address (VPA)</label>
+                                    <input type="text" class="form-control form-control-cineverse" placeholder="username@okaxis or 9876543210@ybl" value="cinephile@upi">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Card Tab -->
+                        <div class="tab-pane fade" id="card" role="tabpanel">
+                            <div class="p-3 mb-3 rounded-3 bg-dark border border-secondary">
+                                <div class="alert alert-dark border-warning text-warning small py-2 mb-3">
+                                    <i class="fa-solid fa-triangle-exclamation me-1"></i>Demo Mode — Do NOT enter real credit/debit card numbers.
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label text-secondary small">Cardholder Name</label>
+                                    <input type="text" class="form-control form-control-cineverse" value="{{ user.get_full_name|default:user.username }}">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label text-secondary small">Card Number</label>
+                                    <input type="text" class="form-control form-control-cineverse" value="4532 •••• •••• 8892">
+                                </div>
+                                <div class="row g-2">
+                                    <div class="col-6">
+                                        <label class="form-label text-secondary small">Expiry Date</label>
+                                        <input type="text" class="form-control form-control-cineverse" value="12/28">
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label text-secondary small">CVV</label>
+                                        <input type="password" class="form-control form-control-cineverse" value="123" maxlength="3">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Net Banking Tab -->
+                        <div class="tab-pane fade" id="netbanking" role="tabpanel">
+                            <div class="p-3 mb-3 rounded-3 bg-dark border border-secondary">
+                                <label class="form-label text-secondary small">Select Your Bank</label>
+                                <select class="form-select form-select-cineverse mb-3">
+                                    <option selected>State Bank of India (SBI)</option>
+                                    <option>HDFC Bank</option>
+                                    <option>ICICI Bank</option>
+                                    <option>Axis Bank</option>
+                                    <option>Kotak Mahindra Bank</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Wallet Tab -->
+                        <div class="tab-pane fade" id="wallet" role="tabpanel">
+                            <div class="p-3 mb-3 rounded-3 bg-dark border border-secondary">
+                                <label class="form-label text-secondary small">Select Digital Wallet</label>
+                                <select class="form-select form-select-cineverse mb-3">
+                                    <option selected>Paytm Wallet</option>
+                                    <option>Amazon Pay</option>
+                                    <option>Mobikwik</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex flex-column gap-2 mt-4">
+                        <button type="submit" onclick="document.getElementById('payment_action_input').value='success';" class="btn btn-accent btn-lg w-100 fw-bold py-3 shadow-glow">
+                            <i class="fa-solid fa-lock me-2"></i>Pay ₹{{ grand_total|floatformat:2 }} & Confirm Booking
+                        </button>
+                        
+                        <button type="submit" onclick="document.getElementById('payment_action_input').value='fail';" class="btn btn-outline-danger btn-sm w-100 py-2 text-decoration-none">
+                            <i class="fa-solid fa-bug me-1"></i>Simulate Payment Failure (Demo Test)
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Right Column: Itemized Order Summary -->
+        <div class="col-lg-5">
+            <div class="p-4 glass">
+                <h5 class="fw-bold text-white mb-3">
+                    <i class="fa-solid fa-receipt text-danger me-2"></i>Booking Summary
+                </h5>
+
+                <div class="d-flex gap-3 mb-4 pb-3 border-bottom border-secondary">
+                    <div class="poster-wrapper rounded-3 shadow" style="width: 70px; height: 100px;">
+                        {% if booking.show.movie.primary_poster %}
+                            <img src="{{ booking.show.movie.primary_poster }}" alt="{{ booking.show.movie.title }}" class="poster-image">
+                        {% else %}
+                            <div class="poster-fallback p-1 fs-6">🎬</div>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <h6 class="fw-bold text-white mb-1">{{ booking.show.movie.title }}</h6>
+                        <small class="text-secondary d-block"><i class="fa-solid fa-building-user text-danger me-1"></i>{{ booking.show.theater.name }}</small>
+                        <small class="text-secondary d-block">📍 {{ booking.show.theater.city }} ({{ booking.show.screen }})</small>
+                        <small class="text-warning d-block mt-1"><i class="fa-regular fa-clock me-1"></i>{{ booking.show.show_date|date:"D, M d" }} at {{ booking.show.start_time|time:"h:i A" }}</small>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between text-secondary mb-2">
+                        <span>Seats Selected:</span>
+                        <strong class="text-white">{{ booking.selected_seats|default:"Reserved" }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between text-secondary mb-2">
+                        <span>Ticket Price:</span>
+                        <span class="text-white">₹{{ ticket_price|floatformat:2 }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between text-secondary mb-2">
+                        <span>Subtotal ({{ booking.number_of_seats }} × ₹{{ ticket_price|floatformat:2 }}):</span>
+                        <span class="text-white">₹{{ subtotal|floatformat:2 }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between text-secondary mb-2">
+                        <span>Convenience Fee:</span>
+                        <span class="text-white">₹{{ convenience_fee|floatformat:2 }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between text-secondary mb-3 pb-3 border-bottom border-secondary">
+                        <span>GST & Taxes (18%):</span>
+                        <span class="text-white">₹{{ taxes|floatformat:2 }}</span>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="fs-5 fw-bold text-white">Grand Total:</span>
+                        <span class="fs-2 fw-bold text-success">₹{{ grand_total|floatformat:2 }}</span>
+                    </div>
+                </div>
+
+                <div class="mt-4 pt-3 border-top border-secondary">
+                    <a href="{% url 'booking_create' booking.show.id %}" class="btn btn-outline-glass btn-sm w-100 text-center">
+                        <i class="fa-solid fa-pen-to-square me-2"></i>Change Seats / Back to Selection
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

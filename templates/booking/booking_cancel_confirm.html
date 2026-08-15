@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block title %}Cancel Ticket — {{ booking.booking_reference }} | CineVerse{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 600px;">
+    <div class="p-4 glass text-center">
+        <i class="fa-solid fa-triangle-exclamation fa-4x text-warning mb-3"></i>
+        <h3 class="fw-bold text-white mb-2">Cancel Ticket Booking?</h3>
+        <p class="text-secondary">Are you sure you want to cancel booking <strong class="text-white">{{ booking.booking_reference }}</strong> for <strong>{{ booking.show.movie.title }}</strong>?</p>
+
+        <div class="p-3 rounded-3 border border-secondary text-start text-white my-3 bg-dark">
+            <div class="small text-secondary mb-1">Booking Summary:</div>
+            <div><strong>Show Date:</strong> {{ booking.show.show_date|date:"F d, Y" }} at {{ booking.show.start_time|time:"h:i A" }}</div>
+            <div><strong>Theater:</strong> {{ booking.show.theater.name }} ({{ booking.show.theater.city }})</div>
+            <div><strong>Seats:</strong> {{ booking.selected_seats|default:booking.number_of_seats }}</div>
+            <div><strong>Amount Refundable:</strong> <span class="text-success fw-bold">₹{{ booking.total_amount|floatformat:0 }}</span></div>
+        </div>
+
+        <form method="POST" action="{% url 'booking_cancel' booking.booking_reference %}">
+            {% csrf_token %}
+            <div class="d-grid gap-2">
+                <button type="submit" class="btn btn-accent btn-lg fw-bold">Yes, Cancel Booking</button>
+                <a href="{% url 'my_bookings' %}" class="btn btn-outline-glass">Go Back to My Bookings</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

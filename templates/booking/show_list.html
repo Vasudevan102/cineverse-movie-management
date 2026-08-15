@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Theater Shows & Schedules — CineVerse{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+        <div>
+            <h2 class="fw-bold text-white mb-1"><i class="fa-solid fa-building-user me-2" style="color: var(--cyan);"></i>Theater Shows & Timings</h2>
+            <p class="text-secondary mb-0">Select your preferred theater, date, and showtime to book tickets.</p>
+        </div>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="p-3 mb-4 glass aurora-card">
+        <form method="GET" action="{% url 'show_list' %}" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label text-secondary small fw-bold">Select City</label>
+                <select name="city" class="form-select form-select-cineverse text-white" style="background: rgba(13, 19, 38, 0.8);">
+                    <option value="">All Cities</option>
+                    {% for city in cities %}
+                        <option value="{{ city }}" {% if selected_city == city %}selected{% endif %}>📍 {{ city }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label text-secondary small fw-bold">Select Date</label>
+                <input type="date" name="date" value="{{ selected_date }}" class="form-control form-control-cineverse text-white" style="background: rgba(13, 19, 38, 0.8);">
+            </div>
+            <div class="col-md-4 text-end">
+                <button type="submit" class="btn btn-aurora w-100 fw-bold"><i class="fa-solid fa-filter me-1"></i>Filter Shows</button>
+            </div>
+        </form>
+    </div>
+
+    {% if selected_movie %}
+        <div class="d-flex align-items-center p-3 mb-4 glass border-secondary">
+            <i class="fa-solid fa-film fs-4 me-3" style="color: var(--purple);"></i>
+            <div>
+                Showing showtimes for <strong class="text-white">{{ selected_movie.title }}</strong> ({{ selected_movie.language.name }})
+            </div>
+            <a href="{% url 'show_list' %}" class="btn btn-sm btn-outline-glass ms-auto">Show All Movies</a>
+        </div>
+    {% endif %}
+
+    <!-- Showtimes List -->
+    <div class="row g-4">
+        {% for show in shows %}
+            <div class="col-md-6 col-lg-4">
+                <div class="aurora-card p-4 h-100 d-flex flex-column">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div>
+                            <span class="badge bg-dark border border-secondary text-secondary mb-1">📍 {{ show.theater.city }} | {{ show.movie.language.name }}</span>
+                            <h5 class="fw-bold text-white mb-0">
+                                <a href="{% url 'movie_detail' show.movie.slug %}" class="text-white hover-accent">{{ show.movie.title }}</a>
+                            </h5>
+                        </div>
+                        <span class="fs-4 fw-bold text-success">₹{{ show.ticket_price|floatformat:0 }}</span>
+                    </div>
+
+                    <p class="small text-secondary mb-3">
+                        <i class="fa-solid fa-location-dot me-1" style="color: var(--pink);"></i>{{ show.theater.name }} ({{ show.screen }})<br>
+                        <span class="text-muted">{{ show.theater.location }}</span>
+                    </p>
+
+                    <!-- Occupancy Bar -->
+                    <div class="p-3 mb-3 rounded-3 bg-dark border border-secondary">
+                        <div class="d-flex justify-content-between align-items-center small mb-2">
+                            <span class="text-secondary fw-semibold">🔥 {{ show.occupancy_percent }}% Booked</span>
+                            <span class="badge {% if show.occupancy_percent >= 90 %}bg-danger{% elif show.occupancy_percent >= 70 %}bg-warning text-dark{% else %}bg-success{% endif %}">
+                                {{ show.occupancy_status }}
+                            </span>
+                        </div>
+                        <div class="progress" style="height: 6px; background: rgba(255,255,255,0.08);">
+                            <div class="progress-bar {% if show.occupancy_percent >= 90 %}bg-danger{% elif show.occupancy_percent >= 70 %}bg-warning{% else %}bg-success{% endif %}" data-width="{{ show.occupancy_percent }}%"></div>
+                        </div>
+                    </div>
+
+                    <div class="mt-auto pt-3 border-top border-secondary d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong class="text-warning small"><i class="fa-regular fa-clock me-1"></i>{{ show.show_date|date:"M d" }} @ {{ show.start_time|time:"h:i A" }}</strong>
+                            <div class="small text-secondary">{{ show.available_seats }} seats left</div>
+                        </div>
+                        <a href="{% url 'booking_create' show.id %}" class="btn btn-aurora btn-sm fw-bold px-3">Select Seats</a>
+                    </div>
+                </div>
+            </div>
+        {% empty %}
+            <div class="col-12">
+                <div class="empty-state p-5 text-center aurora-card">
+                    <i class="fa-solid fa-calendar-xmark fs-1 text-muted mb-3"></i>
+                    <h4>No Shows Available</h4>
+                    <p class="text-secondary">No showtimes matched your criteria. Please try another city or date.</p>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

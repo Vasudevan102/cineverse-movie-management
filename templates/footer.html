@@ -1,0 +1,50 @@
+<footer class="footer-cineverse mt-5">
+    <div class="container">
+        <div class="row g-4 mb-4">
+            <div class="col-lg-5">
+                <a class="navbar-brand d-flex align-items-center brand-logo mb-2" href="{% url 'home' %}">
+                    <i class="fa-solid fa-film me-2" style="color: var(--purple);"></i>
+                    <span>Cine</span>Verse
+                </a>
+                <p class="small text-muted mb-3" style="max-width: 400px;">
+                    CineVerse is your ultimate modern cinema ticket booking and movie discovery platform. Experience seamless show scheduling, verified viewer reviews, and smart movie recommendations.
+                </p>
+                <div class="d-flex gap-3 fs-5">
+                    <a href="#" class="text-secondary hover-accent"><i class="fa-brands fa-github"></i></a>
+                    <a href="#" class="text-secondary hover-accent"><i class="fa-brands fa-twitter"></i></a>
+                    <a href="#" class="text-secondary hover-accent"><i class="fa-brands fa-instagram"></i></a>
+                    <a href="#" class="text-secondary hover-accent"><i class="fa-brands fa-youtube"></i></a>
+                </div>
+            </div>
+            <div class="col-6 col-lg-2">
+                <h6 class="text-light fw-bold mb-3">Navigation</h6>
+                <ul class="list-unstyled small d-flex flex-column gap-2 mb-0">
+                    <li><a href="{% url 'home' %}" class="text-muted text-decoration-none hover-white">Home</a></li>
+                    <li><a href="{% url 'movie_list' %}" class="text-muted text-decoration-none hover-white">Movies</a></li>
+                    <li><a href="{% url 'show_list' %}" class="text-muted text-decoration-none hover-white">Theaters</a></li>
+                    <li><a href="{% url 'movie_list' %}?sort_by=-average_rating" class="text-muted text-decoration-none hover-white">Trending</a></li>
+                </ul>
+            </div>
+            <div class="col-6 col-lg-2">
+                <h6 class="text-light fw-bold mb-3">Account</h6>
+                <ul class="list-unstyled small d-flex flex-column gap-2 mb-0">
+                    <li><a href="{% url 'login' %}" class="text-muted text-decoration-none hover-white">Login</a></li>
+                    <li><a href="{% url 'register' %}" class="text-muted text-decoration-none hover-white">Register</a></li>
+                    <li><a href="{% url 'my_bookings' %}" class="text-muted text-decoration-none hover-white">My Bookings</a></li>
+                    <li><a href="{% url 'profile' %}" class="text-muted text-decoration-none hover-white">Profile</a></li>
+                </ul>
+            </div>
+            <div class="col-lg-3">
+                <h6 class="text-light fw-bold mb-3">Newsletter</h6>
+                <p class="small text-muted mb-2">Subscribe to get notifications about new releases & exclusive movie tickets.</p>
+                <div class="input-group">
+                    <input type="email" class="form-control form-control-cineverse py-1 fs-6" placeholder="Enter your email">
+                    <button class="btn btn-accent py-1 px-3" type="button"><i class="fa-solid fa-paper-plane"></i></button>
+                </div>
+            </div>
+        </div>
+        <div class="border-top border-secondary pt-3 text-center small text-muted">
+            &copy; 2026 CineVerse Movie Management System. Built with Django & Bootstrap 5. All rights reserved.
+        </div>
+    </div>
+</footer>

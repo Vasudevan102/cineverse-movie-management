@@ -1,0 +1,38 @@
+<!-- Aurora Glass Quick Search Modal -->
+<div class="modal fade modal-glass" id="globalSearchModal" tabindex="-1" aria-labelledby="globalSearchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content aurora-card border-0" style="background: rgba(13, 19, 38, 0.94); backdrop-filter: blur(30px);">
+            <div class="modal-header border-bottom border-secondary pb-3">
+                <h5 class="modal-title fw-bold text-white" id="globalSearchModalLabel">
+                    <i class="fa-solid fa-magnifying-glass me-2" style="color: var(--cyan);"></i>Search CineVerse
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form action="{% url 'movie_list' %}" method="GET" id="modal-search-form">
+                    {% if selected_city %}
+                        <input type="hidden" name="city" value="{{ selected_city }}">
+                    {% endif %}
+                    <div class="input-group input-group-lg mb-4">
+                        <span class="input-group-text bg-transparent border-end-0" style="border-color: var(--glass-border) !important; color: var(--purple);">
+                            <i class="fa-solid fa-magnifying-glass fs-4"></i>
+                        </span>
+                        <input type="text" name="q" class="form-control form-control-cineverse border-start-0 fs-5 ps-0 text-white" placeholder="Search movies, actors, theaters, cities, genres..." autofocus required style="background: transparent;">
+                        <button class="btn btn-aurora px-4" type="submit">Search</button>
+                    </div>
+                </form>
+
+                <div class="mb-3">
+                    <span class="text-secondary small fw-bold text-uppercase me-2 d-block mb-2">Search Categories:</span>
+                    <div class="d-flex flex-wrap gap-2">
+                        <a href="{% url 'movie_list' %}" class="meta-pill text-white"><i class="fa-solid fa-film me-1 text-purple"></i>Movies</a>
+                        <a href="{% url 'movie_list' %}?q=Action" class="meta-pill text-white"><i class="fa-solid fa-masks-theater me-1 text-cyan"></i>Genres</a>
+                        <a href="{% url 'theater_list' %}" class="meta-pill text-white"><i class="fa-solid fa-building-user me-1 text-pink"></i>Theaters</a>
+                        <a href="#" data-bs-toggle="modal" data-bs-target="#citySelectorModal" class="meta-pill text-white"><i class="fa-solid fa-location-dot me-1 text-warning"></i>Cities</a>
+                        <a href="{% url 'movie_list' %}?sort_by=-average_rating" class="meta-pill text-white"><i class="fa-solid fa-fire me-1 text-danger"></i>Trending</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
