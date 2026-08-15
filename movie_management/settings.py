@@ -34,6 +34,13 @@ DEBUG = os.environ.get('DEBUG', 'True').lower() in ('true', '1', 't', 'yes')
 
 ALLOWED_HOSTS = [h.strip() for h in os.environ.get('ALLOWED_HOSTS', '*').split(',') if h.strip()]
 
+csrf_env = os.environ.get('CSRF_TRUSTED_ORIGINS', '')
+if csrf_env:
+    CSRF_TRUSTED_ORIGINS = [o.strip() for o in csrf_env.split(',') if o.strip()]
+else:
+    CSRF_TRUSTED_ORIGINS = [f"https://{h}" for h in ALLOWED_HOSTS if h not in ('*', '127.0.0.1', 'localhost')]
+
+
 
 # Application definition
 
