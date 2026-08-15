@@ -565,27 +565,68 @@ class Command(BaseCommand):
 
         self.stdout.write(self.style.SUCCESS(f"Seeded {len(created_movies)} movies with posters, backdrops & gallery stills."))
 
-        # 5. Seed Theaters across Indian Cities (Demo Theater Data)
+        # 4.0 Universal Image Backfill for ALL Movies in Database (RULE 5 & 7)
+        fallback_posters = [
+            "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=600&auto=format&fit=crop&q=80",
+            "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=600&auto=format&fit=crop&q=80",
+            "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=600&auto=format&fit=crop&q=80",
+            "https://images.unsplash.com/photo-1509062522246-3755977927d7?w=600&auto=format&fit=crop&q=80",
+        ]
+        fallback_backdrops = [
+            "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=1200&auto=format&fit=crop&q=80",
+            "https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=1200&auto=format&fit=crop&q=80",
+            "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=1200&auto=format&fit=crop&q=80",
+        ]
+
+        for idx, m in enumerate(Movie.objects.all()):
+            if not m.primary_poster:
+                MovieImage.objects.create(
+                    movie=m,
+                    image_type='poster',
+                    is_primary=True,
+                    image_url=fallback_posters[idx % len(fallback_posters)],
+                    caption=f"{m.title} Poster"
+                )
+            if not m.primary_backdrop:
+                MovieImage.objects.create(
+                    movie=m,
+                    image_type='backdrop',
+                    is_primary=False,
+                    image_url=fallback_backdrops[idx % len(fallback_backdrops)],
+                    caption=f"{m.title} Backdrop"
+                )
+
+        # 4.1 Programmatic Movie Image Verification (RULE 7)
+        self.stdout.write(self.style.WARNING("\n--- PROGRAMMATIC MOVIE IMAGE VERIFICATION ---"))
+        for m in Movie.objects.all():
+            p_ok = "OK" if m.primary_poster else "MISSING"
+            b_ok = "OK" if m.primary_backdrop else "MISSING"
+            self.stdout.write(f"{m.title}\n  poster: {p_ok}\n  backdrop: {b_ok}")
+
+        # 5. Seed Theaters across Indian Cities (RULE 8, 9, 10)
         theaters_dataset = [
-            # Chennai
+            # Chennai (12 Theaters across 10 Required Areas)
             ("Luxe Cinemas", "Royapettah", "Chennai", "Express Avenue Mall, Royapettah", 8, "IMAX 4K, Dolby Atmos, VIP Lounge, Recliners, Food Court, Parking"),
             ("Rohini Silver Screens", "Koyambedu", "Chennai", "123 Poonamallee High Rd, Koyambedu", 6, "Dolby Atmos, RGB Laser, Recliner Seats, Food Court"),
             ("AGS Cinemas Velachery", "Velachery", "Chennai", "1/139 Bypass Rd, Velachery", 5, "Dolby Atmos, 4K Projection, Food Court, Parking"),
             ("Sathyam Cinemas", "Royapettah", "Chennai", "8 Thiruvalluvar Salai, Royapettah", 6, "SPI RDX, Dolby Atmos, Landmark Popcorn"),
             ("Kamala Cinemas", "Vadapalani", "Chennai", "183 Arcot Rd, Vadapalani", 2, "4K Projection, Dolby Atmos, Parking"),
-            ("Devi Cineplex", "Anna Salai", "Chennai", "48 Mount Road, Anna Salai", 4, "70mm Giant Screen, 4K Projection"),
+            ("AGS Cinemas T Nagar", "T Nagar", "Chennai", "14 Habibullah Rd, T Nagar", 4, "Dolby Atmos, Laser 4K, Recliners"),
+            ("PVR Grand Galada", "Guindy", "Chennai", "GST Road, Opposite Airport, Guindy", 5, "Dolby Atmos, Gold Class Lounge"),
+            ("AGS Cinemas OMR", "OMR", "Chennai", "Navalur Main Rd, OMR", 4, "Dolby Atmos, RGB Laser Projection"),
+            ("GK Cinemas", "Porur", "Chennai", "Trunk Rd, Porur", 2, "4K RGB Laser, Dolby Atmos"),
+            ("S2 Perambur", "Perambur", "Chennai", "Spectrum Mall, Paper Mills Rd, Perambur", 5, "SPI RDX, Dolby Atmos"),
             ("Mayajaal Multiplex", "ECR", "Chennai", "1/105 East Coast Road, Kanathur", 16, "16 Screens, Gaming Arcade, Bowling, Food Court"),
-            ("Escape Cinemas", "Royapettah", "Chennai", "Express Avenue, 3rd Floor, Royapettah", 8, "Luxe Seating, Dolby Atmos, Food Lounge"),
-            ("Vettri Theatres", "Chromepet", "Chennai", "51 GST Road, Chromepet", 2, "RGB Laser, Dolby Atmos, Recliners"),
             ("PVR INOX VR Mall", "Anna Nagar", "Chennai", "VR Chennai Mall, 100 Feet Rd", 10, "IMAX 4K, Dolby Atmos, Gold Class"),
             ("Cinepolis Grand Mall", "Velachery", "Chennai", "Velachery Main Rd", 5, "VIP Lounge, Dolby Atmos, 4K"),
 
-            # Coimbatore
-            ("KG Cinemas", "Race Course", "Coimbatore", "Bunny Complex, Race Course Rd", 4, "4K Dolby Atmos, Food Court, Parking"),
+            # Coimbatore (6 Theaters across 5 Required Areas)
+            ("The Cinema", "Gandhipuram", "Coimbatore", "Cross Cut Rd, Gandhipuram", 3, "Digital Projection, Air Conditioned"),
             ("SPI Brookefields", "RS Puram", "Coimbatore", "Brookefields Mall, Krishnaswamy Rd", 6, "SPI Sound, 4K RGB Laser, Recliners"),
             ("Fun Cinema", "Peelamedu", "Coimbatore", "Fun Republic Mall, Avinashi Rd", 5, "Dolby Atmos, Food Lounge, Gaming Zone"),
+            ("Miraj Cinemas", "Avinashi Road", "Coimbatore", "Avinashi Rd, Near Airport", 4, "Dolby Atmos, VIP Recliners"),
+            ("Ganga Cinema", "Saibaba Colony", "Coimbatore", "NSR Rd, Saibaba Colony", 2, "RGB Laser, Dolby Atmos"),
             ("Prozone Multiplex", "Saravanampatti", "Coimbatore", "Prozone Mall, Sathy Rd", 9, "IMAX, Dolby Atmos, Parking"),
-            ("The Cinema", "Cross Cut Road", "Coimbatore", "Gandhipuram, Cross Cut Rd", 3, "Digital Projection, Air Conditioned"),
 
             # Madurai, Trichy, Salem, Tirunelveli
             ("Gopuram Cinemas", "KK Nagar", "Madurai", "80 Feet Rd, KK Nagar", 4, "Dolby Atmos, 4K Projection"),
@@ -594,21 +635,18 @@ class Command(BaseCommand):
             ("ARRS Multiplex", "Meyyanur", "Salem", "ARRS Tower, Meyyanur Main Rd", 5, "Dolby Atmos, 4K Laser"),
             ("Ram Muthuram Cinemas", "Palayamkottai", "Tirunelveli", "Tiruchendur Rd", 2, "Dolby Atmos, RGB Laser"),
 
-            # Bengaluru
+            # Bengaluru, Hyderabad, Kochi, Mumbai, Delhi, Pune
             ("PVR Forum Mall", "Koramangala", "Bengaluru", "Forum Mall, Hosur Rd", 11, "IMAX, 4DX, Gold Class, Dolby Atmos"),
             ("INOX Lido Mall", "MG Road", "Bengaluru", "1/2 Swami Vivekananda Rd", 4, "Insignia Lounge, Dolby Atmos"),
             ("Cinepolis Orion Mall", "Rajajinagar", "Bengaluru", "Dr Rajkumar Rd", 11, "VIP Recliners, Dolby Atmos, 4K"),
-
-            # Hyderabad
             ("Prasads Multiplex", "NTR Gardens", "Hyderabad", "LIC Building Rd", 7, "Large Screen 4K, Dolby Atmos, Gaming Zone"),
             ("AMB Cinemas", "Gachibowli", "Hyderabad", "Sarath City Capital Mall", 7, "VIP Lounge, Dolby Atmos, Laser 4K"),
             ("PVR Next Galleria", "Panjagutta", "Hyderabad", "Metro Station Mall", 6, "4DX, Dolby Atmos, Food Court"),
-
-            # Mumbai & Delhi & Kochi
             ("PVR Phoenix Palladium", "Lower Parel", "Mumbai", "High Street Phoenix", 9, "IMAX, Director's Cut, Luxe Dining"),
             ("INOX Megaplex Inorbit", "Malad", "Mumbai", "Inorbit Mall", 11, "MX4D, ScreenX, Insignia Lounge"),
             ("PVR Director's Cut", "Vasant Kunj", "Delhi", "Ambience Mall", 4, "7-Star Luxury Cinema, Gourmet Food"),
             ("PVR Lulu Mall", "Edappally", "Kochi", "Lulu Shopping Mall", 9, "IMAX 4K, Gold Class, Dolby Atmos"),
+            ("PVR Phoenix Marketcity", "Viman Nagar", "Pune", "Phoenix Marketcity, Nagar Rd", 9, "IMAX, 4DX, Play House"),
         ]
 
         created_theaters = []
@@ -626,9 +664,9 @@ class Command(BaseCommand):
                 )
             created_theaters.append(th)
 
-        self.stdout.write(self.style.SUCCESS(f"Seeded {len(created_theaters)} theaters."))
+        self.stdout.write(self.style.SUCCESS(f"Seeded {len(created_theaters)} theaters across {len(set(t.city for t in created_theaters))} cities."))
 
-        # 6. Seed Shows (August 15 to August 22, 2026)
+        # 6. Seed Shows & Seats (August 15 to August 22, 2026 - RULE 11, 12, 13)
         today = timezone.now().date()
         show_slots = [
             (datetime.time(9, 30), datetime.time(12, 15)),
@@ -656,7 +694,6 @@ class Command(BaseCommand):
                 for s_num in range(1, screens_to_seed + 1):
                     screen_name = f"Screen {s_num}"
                     for slot_idx, (st_time, end_time) in enumerate(show_slots):
-                        # Determine movie for this theater, screen, date, and slot deterministically
                         m_offset = (t_idx * 3 + s_num * 2 + slot_idx + day_offset) % num_movies
                         movie = created_movies[m_offset]
                         ticket_price = price_tiers[(t_idx + slot_idx) % len(price_tiers)]
@@ -737,4 +774,18 @@ class Command(BaseCommand):
                     )
                     s_obj.movie.update_rating_summary()
 
-        self.stdout.write(self.style.SUCCESS("Successfully completed CineVerse comprehensive seed data initialization!"))
+        # 8. Print Detailed Verification Summary Counts (RULE 16)
+        from django.db.models import Sum
+        total_seats_sum = Show.objects.aggregate(t_seats=Sum('total_seats'))['t_seats'] or 0
+
+        self.stdout.write(self.style.SUCCESS("\n=================================================="))
+        self.stdout.write(self.style.SUCCESS("CINEVERSE LIVE DATABASE SEED VERIFICATION REPORT"))
+        self.stdout.write(self.style.SUCCESS("=================================================="))
+        self.stdout.write(f"Movies: {Movie.objects.count()}")
+        self.stdout.write(f"Movie Images: {MovieImage.objects.count()}")
+        self.stdout.write(f"Cities: {Theater.objects.values('city').distinct().count()}")
+        self.stdout.write(f"Theaters: {Theater.objects.count()}")
+        self.stdout.write(f"Shows: {Show.objects.count()}")
+        self.stdout.write(f"Seats (Total Capacity): {total_seats_sum}")
+        self.stdout.write(self.style.SUCCESS("==================================================\n"))
+

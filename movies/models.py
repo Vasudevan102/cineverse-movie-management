@@ -139,6 +139,10 @@ class Movie(models.Model):
         return self.primary_poster
 
     @property
+    def primary_backdrop(self):
+        return self.backdrop_url
+
+    @property
     def genre_theme_class(self):
         first_genre = self.genres.first()
         if not first_genre:
