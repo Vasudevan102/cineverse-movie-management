@@ -33,13 +33,18 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-8(bggra3*royrtc$@k71r
 DEBUG = os.environ.get('DEBUG', 'True').lower() in ('true', '1', 't', 'yes')
 
 ALLOWED_HOSTS = [h.strip() for h in os.environ.get('ALLOWED_HOSTS', '*').split(',') if h.strip()]
+if '*' not in ALLOWED_HOSTS:
+    for host in ['.vercel.app', '.now.sh', '127.0.0.1', 'localhost']:
+        if host not in ALLOWED_HOSTS:
+            ALLOWED_HOSTS.append(host)
 
 csrf_env = os.environ.get('CSRF_TRUSTED_ORIGINS', '')
 if csrf_env:
     CSRF_TRUSTED_ORIGINS = [o.strip() for o in csrf_env.split(',') if o.strip()]
 else:
-    CSRF_TRUSTED_ORIGINS = [f"https://{h}" for h in ALLOWED_HOSTS if h not in ('*', '127.0.0.1', 'localhost')]
-
+    CSRF_TRUSTED_ORIGINS = ['https://*.vercel.app', 'https://*.now.sh'] + [
+        f"https://{h.lstrip('.')}" for h in ALLOWED_HOSTS if h not in ('*', '127.0.0.1', 'localhost')
+    ]
 
 
 # Application definition
@@ -109,6 +114,7 @@ if database_url:
         default=database_url,
         conn_max_age=600,
         conn_health_checks=True,
+        ssl_require=True,
     )
 
 
