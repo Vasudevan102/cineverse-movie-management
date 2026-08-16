@@ -87,9 +87,17 @@ def show_list_view(request):
         if not selected_movie and '-' in m_val:
             base_slug = m_val.split('-')[0]
             selected_movie = Movie.objects.filter(slug__iexact=base_slug).first()
+        if not selected_movie:
+            selected_movie = Movie.objects.filter(
+                Q(slug__icontains=m_val) | Q(title__icontains=m_val)
+            ).first()
 
         if selected_movie:
             shows = shows.filter(movie=selected_movie)
+        else:
+            shows = shows.filter(
+                Q(movie__slug__icontains=m_val) | Q(movie__title__icontains=m_val)
+            )
 
     if city_param and city_param.strip():
         c_val = city_param.strip()
@@ -103,6 +111,8 @@ def show_list_view(request):
             shows = shows.filter(show_date=parsed_date)
         except (ValueError, TypeError):
             pass
+
+    shows = shows.order_by('show_date', 'start_time', 'theater__name')
 
     theaters_cities = Theater.objects.filter(is_active=True).values_list('city', flat=True).distinct()
 

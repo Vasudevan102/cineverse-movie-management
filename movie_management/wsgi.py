@@ -19,8 +19,14 @@ app = application
 try:
     from django.core.management import call_command
     from movies.models import Movie
+    from booking.models import Show
+    from django.utils import timezone
+
     call_command('migrate', interactive=False)
-    if Movie.objects.count() == 0:
+
+    today = timezone.localdate()
+    future_shows_count = Show.objects.filter(is_active=True, show_date__gte=today).count()
+    if Movie.objects.count() == 0 or future_shows_count < 200:
         call_command('seed_data')
 except Exception as e:
     pass

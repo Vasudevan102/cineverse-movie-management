@@ -214,3 +214,32 @@ class MovieManagementTestCase(TestCase):
         self.assertEqual(detail_resp.status_code, 200)
         self.assertContains(detail_resp, 'Payment Successful!')
 
+    def test_show_list_query_by_movie(self):
+        # Create movie Vikram
+        vikram = Movie.objects.create(
+            title='Vikram',
+            slug='vikram',
+            description='Action thriller',
+            release_date=date(2022, 6, 3),
+            duration=175,
+            age_certificate='U/A',
+            language=self.lang_en,
+            director='Lokesh'
+        )
+        Show.objects.create(
+            movie=vikram,
+            theater=self.theater,
+            screen='Screen 2',
+            show_date=date.today(),
+            start_time=time(20, 0),
+            end_time=time(23, 0),
+            ticket_price=200.00,
+            total_seats=100,
+            available_seats=100
+        )
+
+        response = self.client.get(reverse('show_list') + '?movie=vikram')
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, 'No Shows Available')
+        self.assertContains(response, 'Vikram')
+
