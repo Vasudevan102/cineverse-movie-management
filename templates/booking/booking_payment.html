@@ -28,6 +28,31 @@
         </span>
     </div>
 
+    <!-- 2-Minute Reservation Timer Banner on Checkout -->
+    {% if remaining_seconds and remaining_seconds > 0 %}
+    <div id="payment-timer-banner" 
+         class="reservation-timer-container p-3 mb-4 d-flex align-items-center justify-content-between flex-wrap gap-2" 
+         data-remaining="{{ remaining_seconds }}" 
+         data-expires="{{ reserved_until_iso }}"
+         data-redirect="{% url 'booking_create' booking.show.id %}">
+        <div class="d-flex align-items-center gap-3">
+            <i class="fa-solid fa-stopwatch text-warning fs-3 animate-pulse"></i>
+            <div>
+                <h6 class="text-white fw-bold mb-0">
+                    <span class="text-warning">Reservation Lock Active</span>
+                </h6>
+                <small class="text-secondary">Seats {{ booking.selected_seats }} are reserved for you. Complete payment before the timer expires.</small>
+            </div>
+        </div>
+        <div class="text-end">
+            <span class="badge bg-dark border border-warning fs-5 fw-mono text-warning px-3 py-2 shadow" id="payment-countdown-display">
+                02:00
+            </span>
+        </div>
+    </div>
+    {% endif %}
+
+
     {% if payment_failed %}
         <div class="alert alert-danger border-danger glass p-4 mb-4 rounded-3 text-center">
             <i class="fa-solid fa-circle-exclamation fa-3x text-danger mb-3"></i>

@@ -170,9 +170,10 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // ----------------------------------------------------------
-    // 3. Interactive 2D Seat Selection & Live Price Calculator
+    // 3. Smart Seat Selection, Live Polling & 2-Minute Hold Timer
     // ----------------------------------------------------------
     const seatButtons = document.querySelectorAll('#visual-seat-grid .seat-btn');
+    const visualGrid = document.getElementById('visual-seat-grid');
     const selectedSeatsInput = document.getElementById('selected_seats_input');
     const numberOfSeatsInput = document.getElementById('id_number_of_seats');
     const selectedSeatsDisplay = document.getElementById('selected-seats-display');
@@ -184,19 +185,74 @@ document.addEventListener('DOMContentLoaded', function () {
     const unitPriceEl = document.getElementById('unit-ticket-price');
     const confirmSeatsBtn = document.getElementById('confirm-seats-btn');
 
+    // Helper: format seconds into MM:SS
+    function formatTimer(seconds) {
+        const m = Math.floor(seconds / 60);
+        const s = seconds % 60;
+        return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    }
+
+    // A. Payment Page 2-Minute Countdown Timer
+    const paymentTimerBanner = document.getElementById('payment-timer-banner');
+    const paymentCountdownDisplay = document.getElementById('payment-countdown-display');
+    if (paymentTimerBanner && paymentCountdownDisplay) {
+        let remainingSec = parseInt(paymentTimerBanner.getAttribute('data-remaining'), 10) || 120;
+        const redirectUrl = paymentTimerBanner.getAttribute('data-redirect');
+
+        function updatePaymentTimer() {
+            if (remainingSec <= 0) {
+                paymentCountdownDisplay.textContent = "00:00";
+                paymentTimerBanner.classList.remove('border-warning');
+                paymentTimerBanner.classList.add('border-danger', 'bg-danger', 'bg-opacity-25');
+                const submitBtn = document.querySelector('#payment-gateway-form button[type="submit"]');
+                if (submitBtn) submitBtn.disabled = true;
+                alert("⚠ Your 2-minute seat reservation has expired. Returning to seat selection.");
+                if (redirectUrl) {
+                    window.location.href = redirectUrl;
+                }
+                return;
+            }
+            paymentCountdownDisplay.textContent = formatTimer(remainingSec);
+            remainingSec -= 1;
+        }
+
+        updatePaymentTimer();
+        setInterval(updatePaymentTimer, 1000);
+    }
+
+    // B. Seat Selection Page 2-Minute Timer Banner
+    const seatTimerBanner = document.getElementById('reservation-timer-banner');
+    const countdownTimerDisplay = document.getElementById('countdown-timer-display');
+    if (seatTimerBanner && countdownTimerDisplay) {
+        let seatRemainingSec = parseInt(seatTimerBanner.getAttribute('data-remaining'), 10) || 0;
+        if (seatRemainingSec > 0) {
+            function updateSeatHoldTimer() {
+                if (seatRemainingSec <= 0) {
+                    countdownTimerDisplay.textContent = "00:00";
+                    seatTimerBanner.classList.add('d-none');
+                    return;
+                }
+                countdownTimerDisplay.textContent = formatTimer(seatRemainingSec);
+                seatRemainingSec -= 1;
+            }
+            updateSeatHoldTimer();
+            setInterval(updateSeatHoldTimer, 1000);
+        }
+    }
+
+    // C. Multi-Seat Selection & Live Polling
     if (seatButtons.length > 0 && unitPriceEl) {
         const unitPrice = parseFloat(unitPriceEl.getAttribute('data-price')) || 180;
         const convenienceFee = 30;
-        const taxesFee = 54;
         let selectedSeats = [];
 
-        // Check if pre-selected seats exist (e.g. returning from payment page)
+        // Check if pre-selected / draft seats exist
         if (selectedSeatsInput && selectedSeatsInput.value.trim() !== '') {
             const preSelectedStr = selectedSeatsInput.value.trim();
-            selectedSeats = preSelectedStr.split(',').map(s => s.trim()).filter(s => s.length > 0 && !s.includes('Seat'));
+            selectedSeats = preSelectedStr.split(',').map(s => s.trim().toUpperCase()).filter(s => s.length > 0 && !s.includes('SEAT'));
             selectedSeats.forEach(seatId => {
                 const btn = document.querySelector(`#visual-seat-grid .seat-btn[data-seat-id="${seatId}"]`);
-                if (btn && !btn.classList.contains('seat-booked')) {
+                if (btn && !btn.classList.contains('seat-booked') && !btn.classList.contains('seat-reserved')) {
                     btn.classList.remove('seat-available');
                     btn.classList.add('seat-selected');
                 }
@@ -207,7 +263,8 @@ document.addEventListener('DOMContentLoaded', function () {
         function updateCalculations() {
             const seatCount = selectedSeats.length;
             const subtotal = seatCount * unitPrice;
-            const grandTotal = seatCount > 0 ? (subtotal + convenienceFee + taxesFee) : 0;
+            const taxes = seatCount > 0 ? (subtotal * 0.18) : 0;
+            const grandTotal = seatCount > 0 ? (subtotal + convenienceFee + taxes) : 0;
 
             if (selectedSeatsInput) selectedSeatsInput.value = selectedSeats.join(', ');
             if (numberOfSeatsInput) numberOfSeatsInput.value = seatCount > 0 ? seatCount : 1;
@@ -221,43 +278,130 @@ document.addEventListener('DOMContentLoaded', function () {
 
             if (ticketSubtotalEl) ticketSubtotalEl.textContent = '₹' + subtotal.toFixed(0);
             if (convenienceFeeEl) convenienceFeeEl.textContent = seatCount > 0 ? ('₹' + convenienceFee.toFixed(0)) : '₹0';
-            if (taxesFeeEl) taxesFeeEl.textContent = seatCount > 0 ? ('₹' + taxesFee.toFixed(0)) : '₹0';
+            if (taxesFeeEl) taxesFeeEl.textContent = seatCount > 0 ? ('₹' + Math.round(taxes)) : '₹0';
 
             if (totalPriceDisplay) {
-                totalPriceDisplay.textContent = '₹' + grandTotal.toFixed(0);
+                totalPriceDisplay.textContent = '₹' + Math.round(grandTotal);
             }
 
             if (confirmSeatsBtn) {
-                confirmSeatsBtn.disabled = seatCount === 0;
+                confirmSeatsBtn.disabled = (seatCount === 0 || seatCount > 10);
             }
         }
 
+        // Seat Click Handler
         seatButtons.forEach(function (btn) {
             btn.addEventListener('click', function () {
-                if (this.classList.contains('seat-booked')) return;
+                if (this.classList.contains('seat-booked') || this.classList.contains('seat-reserved')) {
+                    return;
+                }
 
-                const seatId = this.getAttribute('data-seat-id');
+                const seatId = this.getAttribute('data-seat-id').toUpperCase();
 
                 if (this.classList.contains('seat-selected')) {
                     // Deselect seat
-                    this.classList.remove('seat-selected');
+                    this.classList.remove('seat-selected', 'seat-mine');
                     this.classList.add('seat-available');
                     selectedSeats = selectedSeats.filter(id => id !== seatId);
                 } else {
                     // Select seat (limit to 10 max)
                     if (selectedSeats.length >= 10) {
-                        alert("You can select up to 10 seats per booking.");
+                        alert("You can select a maximum of 10 seats per booking.");
                         return;
                     }
                     this.classList.remove('seat-available');
                     this.classList.add('seat-selected');
-                    selectedSeats.push(seatId);
+                    if (!selectedSeats.includes(seatId)) {
+                        selectedSeats.push(seatId);
+                    }
                 }
 
                 updateCalculations();
             });
         });
+
+        // D. Live Seat Availability Polling
+        if (visualGrid) {
+            const pollUrl = visualGrid.getAttribute('data-poll-url');
+            if (pollUrl) {
+                function pollSeatAvailability() {
+                    fetch(pollUrl, {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                    .then(res => {
+                        if (!res.ok) throw new Error("API response error");
+                        return res.json();
+                    })
+                    .then(data => {
+                        if (data && data.seats) {
+                            data.seats.forEach(seat => {
+                                const btn = document.querySelector(`#visual-seat-grid .seat-btn[data-seat-id="${seat.seat_id}"]`);
+                                if (!btn) return;
+
+                                const isPremium = seat.seat_type === 'premium';
+                                const premiumBorderClass = isPremium ? 'border-warning' : '';
+
+                                if (seat.status === 'BOOKED') {
+                                    btn.className = `seat-btn seat-icon seat-booked ${premiumBorderClass}`;
+                                    btn.disabled = true;
+                                    if (selectedSeats.includes(seat.seat_id)) {
+                                        selectedSeats = selectedSeats.filter(s => s !== seat.seat_id);
+                                        updateCalculations();
+                                    }
+                                } else if (seat.status === 'RESERVED') {
+                                    if (seat.reserved_by_current_user) {
+                                        // Reserved by the active logged-in user
+                                        btn.className = `seat-btn seat-icon seat-selected seat-mine ${premiumBorderClass}`;
+                                        btn.disabled = false;
+                                        if (!selectedSeats.includes(seat.seat_id)) {
+                                            selectedSeats.push(seat.seat_id);
+                                            updateCalculations();
+                                        }
+                                    } else {
+                                        // Reserved by someone else
+                                        btn.className = `seat-btn seat-icon seat-reserved ${premiumBorderClass}`;
+                                        btn.disabled = true;
+                                        if (selectedSeats.includes(seat.seat_id)) {
+                                            selectedSeats = selectedSeats.filter(s => s !== seat.seat_id);
+                                            updateCalculations();
+                                        }
+                                    }
+                                } else {
+                                    // AVAILABLE
+                                    if (selectedSeats.includes(seat.seat_id)) {
+                                        btn.className = `seat-btn seat-icon seat-selected ${premiumBorderClass}`;
+                                        btn.disabled = false;
+                                    } else {
+                                        btn.className = `seat-btn seat-icon seat-available ${premiumBorderClass}`;
+                                        btn.disabled = false;
+                                    }
+                                }
+                            });
+
+                            // Dynamically update available count & occupancy if present
+                            const availEl = document.getElementById('available-seats-display');
+                            if (availEl && data.available_count !== undefined) {
+                                availEl.textContent = data.available_count;
+                            }
+                            const bookedEl = document.getElementById('booked-seats-display');
+                            if (bookedEl && data.booked_count !== undefined) {
+                                bookedEl.textContent = data.booked_count;
+                            }
+                        }
+                    })
+                    .catch(() => {
+                        // Silent catch on network blip
+                    });
+                }
+
+                // Poll every 3.5 seconds
+                setInterval(pollSeatAvailability, 3500);
+            }
+        }
     }
+
 
     // ----------------------------------------------------------
     // 3. Auto-dismiss Flash Alerts

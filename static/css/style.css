@@ -831,11 +831,19 @@ img {
     color: #fff;
 }
 
-.seat-indicator.indicator-selected {
+.seat-indicator.indicator-selected,
+.seat-indicator.indicator-mine {
     background: var(--gradient-aurora);
     color: #fff;
     box-shadow: 0 0 16px var(--purple);
     border: 1px solid var(--cyan);
+}
+
+.seat-indicator.indicator-reserved {
+    background: rgba(245, 158, 11, 0.25);
+    border: 1px solid #f59e0b;
+    color: #fbbf24;
+    box-shadow: 0 0 10px rgba(245, 158, 11, 0.3);
 }
 
 .seat-indicator.indicator-booked {
@@ -850,13 +858,78 @@ img {
     color: var(--accent-gold);
 }
 
-.seat-btn.seat-selected {
+.seat-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--glass-border);
+    color: #fff;
+    position: relative;
+    user-select: none;
+}
+
+.seat-btn:hover:not(:disabled):not(.seat-booked):not(.seat-reserved) {
+    transform: translateY(-2px) scale(1.06);
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.seat-btn.seat-selected,
+.seat-btn.seat-mine {
     background: var(--gradient-aurora) !important;
     border-color: var(--cyan) !important;
     box-shadow: 0 0 14px var(--purple) !important;
     color: #fff !important;
     transform: scale(1.1);
 }
+
+.seat-btn.seat-reserved {
+    background: rgba(245, 158, 11, 0.2) !important;
+    border-color: #f59e0b !important;
+    color: #fbbf24 !important;
+    cursor: not-allowed !important;
+    opacity: 0.85;
+    box-shadow: 0 0 8px rgba(245, 158, 11, 0.25) !important;
+}
+
+.seat-btn.seat-reserved::after {
+    content: "🔒";
+    font-size: 0.55rem;
+    position: absolute;
+    top: 2px;
+    right: 2px;
+}
+
+.seat-btn.seat-booked {
+    background: rgba(255, 255, 255, 0.03) !important;
+    border-color: rgba(255, 255, 255, 0.05) !important;
+    color: rgba(255, 255, 255, 0.2) !important;
+    cursor: not-allowed !important;
+    opacity: 0.45;
+    text-decoration: line-through;
+}
+
+.reservation-timer-container {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(220, 38, 38, 0.15) 100%);
+    border: 1px solid rgba(245, 158, 11, 0.4);
+    box-shadow: 0 0 20px rgba(245, 158, 11, 0.2);
+    border-radius: 12px;
+    animation: timerPulse 2s infinite ease-in-out;
+}
+
+@keyframes timerPulse {
+    0%, 100% { box-shadow: 0 0 15px rgba(245, 158, 11, 0.2); border-color: rgba(245, 158, 11, 0.4); }
+    50% { box-shadow: 0 0 25px rgba(245, 158, 11, 0.45); border-color: rgba(245, 158, 11, 0.8); }
+}
+
 
 .cinema-screen-container {
     perspective: 400px;

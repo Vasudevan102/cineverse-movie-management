@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Theater, Show, Booking, Payment
+from .models import Theater, Show, Booking, Payment, SeatReservation
 
 class ShowInline(admin.TabularInline):
     model = Show
@@ -48,3 +48,15 @@ class PaymentAdmin(admin.ModelAdmin):
     @admin.display(description='Total Paid')
     def grand_total_in_rupees(self, obj):
         return f"₹{obj.total_amount:.0f}"
+
+@admin.register(SeatReservation)
+class SeatReservationAdmin(admin.ModelAdmin):
+    list_display = ('show', 'seat_number', 'user', 'status', 'reserved_until', 'is_expired_display', 'booking', 'created_at')
+    list_filter = ('status', 'created_at')
+    search_fields = ('seat_number', 'user__username', 'booking__booking_reference', 'show__movie__title')
+    readonly_fields = ('created_at', 'updated_at')
+
+    @admin.display(description='Expired?')
+    def is_expired_display(self, obj):
+        return "Yes" if obj.is_expired else "No"
+

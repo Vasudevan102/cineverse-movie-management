@@ -11,8 +11,29 @@
             <i class="fa-solid fa-arrow-left me-2"></i>Back to Showtimes
         </a>
         <span class="badge bg-dark border border-secondary text-secondary">
-            Step 6 of 8: Seat Selection
+            Step 6 of 8: Smart Seat Selection
         </span>
+    </div>
+
+    <!-- 2-Minute Reservation Timer Banner -->
+    <div id="reservation-timer-banner" 
+         class="reservation-timer-container p-3 mb-4 d-flex align-items-center justify-content-between flex-wrap gap-2 {% if not user_remaining_seconds or user_remaining_seconds <= 0 %}d-none{% endif %}" 
+         data-remaining="{{ user_remaining_seconds|default:0 }}" 
+         data-expires="{{ user_reserved_until_iso|default:'' }}">
+        <div class="d-flex align-items-center gap-3">
+            <i class="fa-solid fa-stopwatch text-warning fs-3 animate-pulse"></i>
+            <div>
+                <h6 class="text-white fw-bold mb-0">
+                    <span class="text-warning">Seats Temporarily Reserved (2-Min Hold)</span>
+                </h6>
+                <small class="text-secondary">Complete checkout before hold expires and seats are released back to others.</small>
+            </div>
+        </div>
+        <div class="text-end">
+            <span class="badge bg-dark border border-warning fs-5 fw-mono text-warning px-3 py-2 shadow" id="countdown-timer-display">
+                02:00
+            </span>
+        </div>
     </div>
 
     <!-- Show & Movie Header -->
@@ -58,18 +79,18 @@
                 <div class="p-3 rounded-3 bg-dark border border-secondary">
                     <div class="d-flex justify-content-between align-items-center mb-1">
                         <span class="small text-white fw-bold">
-                            <i class="fa-solid fa-users text-danger me-1"></i>Show Occupancy: {{ show.occupancy_percent }}% Booked
+                            <i class="fa-solid fa-users text-danger me-1"></i>Show Occupancy: <span id="occupancy-pct-text">{{ show.occupancy_percent }}</span>% Booked
                         </span>
-                        <span class="badge {% if show.occupancy_percent >= 90 %}bg-danger animate-pulse{% elif show.occupancy_percent >= 70 %}bg-warning text-dark{% else %}bg-success{% endif %}">
+                        <span class="badge {% if show.occupancy_percent >= 90 %}bg-danger animate-pulse{% elif show.occupancy_percent >= 70 %}bg-warning text-dark{% else %}bg-success{% endif %}" id="occupancy-status-badge">
                             {{ show.occupancy_status }}
                         </span>
                     </div>
                     <div class="progress mb-2" style="height: 8px; background: rgba(255,255,255,0.08);">
-                        <div class="progress-bar {% if show.occupancy_percent >= 90 %}bg-danger{% elif show.occupancy_percent >= 70 %}bg-warning{% else %}bg-success{% endif %}" role="progressbar" data-width="{{ show.occupancy_percent }}%" aria-valuenow="{{ show.occupancy_percent }}" aria-valuemin="0" aria-valuemax="100"></div>
+                        <div class="progress-bar {% if show.occupancy_percent >= 90 %}bg-danger{% elif show.occupancy_percent >= 70 %}bg-warning{% else %}bg-success{% endif %}" id="occupancy-progress-bar" role="progressbar" data-width="{{ show.occupancy_percent }}%" aria-valuenow="{{ show.occupancy_percent }}" aria-valuemin="0" aria-valuemax="100"></div>
                     </div>
                     <div class="d-flex justify-content-between align-items-center small text-secondary">
-                        <span>👥 {{ show.booked_seats_count }} viewers booked for this show</span>
-                        <span>🎟 {{ show.available_seats }} of {{ show.total_seats }} seats available</span>
+                        <span>👥 <span id="booked-seats-display">{{ show.booked_seats_count }}</span> viewers booked for this show</span>
+                        <span>🎟 <span id="available-seats-display">{{ show.available_seats }}</span> of {{ show.total_seats }} seats available</span>
                     </div>
                 </div>
             </div>
@@ -77,11 +98,16 @@
     </div>
 
     <!-- 2D Interactive Seat Map -->
-    <div class="p-4 mb-4 glass">
-        <h5 class="fw-bold text-white text-center mb-1">
-            <i class="fa-solid fa-couch text-danger me-2"></i>Select Seats
-        </h5>
-        <p class="text-secondary text-center small mb-4">Click on available seats to select. Standard & Premium rows available.</p>
+    <div class="p-4 mb-4 glass" id="seat-selection-card">
+        <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+            <h5 class="fw-bold text-white mb-0">
+                <i class="fa-solid fa-couch text-danger me-2"></i>Select Seats (1 to 10)
+            </h5>
+            <span class="badge bg-secondary bg-opacity-25 border border-secondary text-info small">
+                <i class="fa-solid fa-rotate text-info me-1"></i>Live Availability Active
+            </span>
+        </div>
+        <p class="text-secondary small mb-4">Click available seats to reserve. Reservations are held for 2 minutes during checkout.</p>
 
         <!-- Cinema Screen Bar -->
         <div class="cinema-screen-container">
@@ -89,15 +115,19 @@
             <span class="text-uppercase small text-secondary fw-bold" style="letter-spacing: 2px;">SCREEN THIS WAY</span>
         </div>
 
-        <!-- Legend -->
-        <div class="d-flex justify-content-center flex-wrap gap-4 mb-4 p-2 rounded bg-dark border border-secondary">
+        <!-- Accessible 5-State Legend -->
+        <div class="d-flex justify-content-center flex-wrap gap-3 mb-4 p-2 rounded bg-dark border border-secondary">
             <div class="seat-legend-item">
                 <span class="seat-indicator indicator-available">○</span>
                 <span>Available</span>
             </div>
             <div class="seat-legend-item">
                 <span class="seat-indicator indicator-selected">●</span>
-                <span>Selected</span>
+                <span>Selected by You</span>
+            </div>
+            <div class="seat-legend-item">
+                <span class="seat-indicator indicator-reserved">🔒</span>
+                <span>Reserved (2-Min Hold)</span>
             </div>
             <div class="seat-legend-item">
                 <span class="seat-indicator indicator-booked">✕</span>
@@ -109,8 +139,13 @@
             </div>
         </div>
 
-        <!-- 2D Seat Grid -->
-        <div class="seat-grid-container text-center my-4 overflow-auto py-2" id="visual-seat-grid">
+        <!-- 2D Seat Grid Container -->
+        <div class="seat-grid-container text-center my-4 overflow-auto py-2" 
+             id="visual-seat-grid"
+             data-show-id="{{ show.id }}"
+             data-user-id="{{ user.id|default:'' }}"
+             data-poll-url="{% url 'show_seats_api' show.id %}">
+            
             <!-- Row A to D (Standard) -->
             {% for row in "ABCD" %}
                 <div class="d-flex align-items-center justify-content-center gap-2 mb-2">
@@ -119,7 +154,11 @@
                         <button type="button" 
                                 class="seat-btn seat-icon seat-available" 
                                 data-seat-id="{{ row }}{{ num }}" 
-                                data-price="{{ show.ticket_price }}">
+                                data-row="{{ row }}"
+                                data-num="{{ num }}"
+                                data-type="standard"
+                                data-price="{{ show.ticket_price }}"
+                                title="Seat {{ row }}{{ num }} (Standard)">
                             {{ num }}
                         </button>
                     {% endfor %}
@@ -137,7 +176,11 @@
                         <button type="button" 
                                 class="seat-btn seat-icon seat-available border-warning" 
                                 data-seat-id="{{ row }}{{ num }}" 
-                                data-price="{{ show.ticket_price }}">
+                                data-row="{{ row }}"
+                                data-num="{{ num }}"
+                                data-type="premium"
+                                data-price="{{ show.ticket_price }}"
+                                title="Seat {{ row }}{{ num }} (Premium)">
                             {{ num }}
                         </button>
                     {% endfor %}
@@ -149,7 +192,7 @@
         <!-- Selection Summary & Form -->
         <form method="POST" id="seat-booking-form" action="{% url 'booking_create' show.id %}">
             {% csrf_token %}
-            <!-- Hidden input for selected seat IDs -->
+            <!-- Hidden inputs -->
             <input type="hidden" name="selected_seats" id="selected_seats_input" value="{{ draft_selected_seats|default:'' }}">
             <input type="hidden" name="number_of_seats" id="id_number_of_seats" value="1">
 
@@ -188,7 +231,7 @@
 
                     <div class="col-12 text-end pt-2">
                         <button type="submit" class="btn btn-accent btn-lg fw-bold px-5 shadow-glow" id="confirm-seats-btn" disabled>
-                            Continue to Payment <i class="fa-solid fa-arrow-right ms-2"></i>
+                            Reserve & Continue to Payment <i class="fa-solid fa-arrow-right ms-2"></i>
                         </button>
                     </div>
                 </div>
@@ -197,3 +240,4 @@
     </div>
 </div>
 {% endblock %}
+

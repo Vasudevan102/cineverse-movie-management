@@ -179,3 +179,57 @@ class Payment(models.Model):
 
     def __str__(self):
         return f"Payment {self.transaction_reference} for {self.booking.booking_reference} (₹{self.total_amount})"
+
+
+class SeatReservation(models.Model):
+    STATUS_CHOICES = [
+        ('RESERVED', 'Temporarily Reserved'),
+        ('BOOKED', 'Confirmed & Booked'),
+    ]
+
+    show = models.ForeignKey(Show, on_delete=models.CASCADE, related_name='seat_reservations')
+    seat_number = models.CharField(max_length=10, db_index=True, help_text="e.g. A1, E4")
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='seat_reservations')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='RESERVED')
+    reserved_until = models.DateTimeField(null=True, blank=True, db_index=True)
+    booking = models.ForeignKey(Booking, on_delete=models.SET_NULL, null=True, blank=True, related_name='seat_reservations')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['show', 'seat_number']
+        unique_together = ('show', 'seat_number')
+        indexes = [
+            models.Index(fields=['show', 'status', 'reserved_until']),
+            models.Index(fields=['reserved_until']),
+        ]
+
+    def __str__(self):
+        return f"{self.show.movie.title} @ {self.show.theater.name} - Seat {self.seat_number} ({self.status} by {self.user.username})"
+
+    @property
+    def is_expired(self):
+        if self.status == 'RESERVED' and self.reserved_until:
+            return timezone.now() > self.reserved_until
+        return False
+
+    @classmethod
+    def release_expired_for_show(cls, show):
+        """Releases/purges expired reservations for a given show."""
+        now = timezone.now()
+        expired = cls.objects.filter(show=show, status='RESERVED', reserved_until__lte=now)
+        count = expired.count()
+        if count > 0:
+            expired.delete()
+        return count
+
+    @classmethod
+    def release_all_expired(cls):
+        """Releases/purges all expired reservations across all shows."""
+        now = timezone.now()
+        expired = cls.objects.filter(status='RESERVED', reserved_until__lte=now)
+        count = expired.count()
+        if count > 0:
+            expired.delete()
+        return count
+
