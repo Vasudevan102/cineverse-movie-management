@@ -409,22 +409,31 @@ celery -A movie_management worker -l info -P solo
 
 ---
 
-## 🧪 Automated Testing Command
+## 🧪 Automated Testing Commands
 
 Run the comprehensive automated test suite verifying Tasks 1 through 6:
 
 ```powershell
-# Run Task 6 PDF Ticket & Email test suite (23 tests)
+# Run Task 6 PDF Ticket & Celery Email test suite
 python manage.py test tests.test_ticket_and_email
 
-# Run Task 5 Movie Discovery test suite (31 tests)
+# Run Task 5 Movie Discovery test suite
 python manage.py test tests.test_movie_discovery
 
-# Run all tests across the entire application (98 tests)
-python manage.py test tests
+# Run Task 4 Executive Admin Dashboard test suite
+python manage.py test tests.test_admin_dashboard
+
+# Run Task 2 & 3 Smart Seats & Razorpay Payment test suite
+python manage.py test booking.tests
+
+# Run Movie Navigation Flow test suite
+python manage.py test tests.test_movie_navigation_flow
+
+# Run the complete test suite across all modules (156 tests)
+python manage.py test -v 2
 ```
 
-Output: `Ran 98 tests in ~74s — OK (0 failures)`
+Verification status: `Ran 156 tests in ~337s — OK (0 failures, 0 errors)`.
 
 
 
