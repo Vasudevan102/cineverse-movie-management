@@ -99,8 +99,6 @@ WSGI_APPLICATION = 'movie_management.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
-import dj_database_url
-
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
@@ -110,12 +108,16 @@ DATABASES = {
 
 database_url = os.environ.get('DATABASE_URL')
 if database_url:
-    DATABASES['default'] = dj_database_url.config(
-        default=database_url,
-        conn_max_age=600,
-        conn_health_checks=True,
-        ssl_require=True,
-    )
+    try:
+        import dj_database_url
+        DATABASES['default'] = dj_database_url.config(
+            default=database_url,
+            conn_max_age=600,
+            conn_health_checks=True,
+            ssl_require=True,
+        )
+    except ImportError:
+        pass
 
 
 
@@ -195,6 +197,43 @@ if not DEBUG:
     SECURE_CONTENT_TYPE_NOSNIFF = True
     SECURE_HSTS_SECONDS = int(os.environ.get('SECURE_HSTS_SECONDS', 31536000))
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-    SECURE_HSTS_PRELOAD = True
+# ---------- Cross-Origin Opener Policy ----------
+# Django 6.0 defaults SECURE_CROSS_ORIGIN_OPENER_POLICY to "same-origin",
+# which blocks Razorpay's 3DS/OTP authentication popup from communicating
+# back to the parent checkout window (the popup opens as about:blank and
+# authentication cannot complete, causing an HTTP 400 during the auth stage).
+# "same-origin-allow-popups" permits Razorpay's popup-based 3DS flow while
+# still isolating the page from cross-origin openers.
+SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin-allow-popups"
+
+# Razorpay Gateway Configuration
+RAZORPAY_KEY_ID = os.environ.get('RAZORPAY_KEY_ID', '')
+RAZORPAY_KEY_SECRET = os.environ.get('RAZORPAY_KEY_SECRET', '')
+RAZORPAY_WEBHOOK_SECRET = os.environ.get('RAZORPAY_WEBHOOK_SECRET', '')
+PAYMENT_GATEWAY_MODE = os.environ.get('PAYMENT_GATEWAY_MODE', 'TEST')  # Options: LIVE, TEST, DEMO
+RAZORPAY_DEMO_MODE = os.environ.get('RAZORPAY_DEMO_MODE', 'False').lower() in ('true', '1', 't', 'yes')
+
+# ---------- Celery Configuration ----------
+CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', 'redis://localhost:6379/0')
+CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND', 'redis://localhost:6379/0')
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = TIME_ZONE
+CELERY_TASK_SOFT_TIME_LIMIT = 120  # 2 minutes soft limit
+CELERY_TASK_TIME_LIMIT = 180       # 3 minutes hard limit
+# Set to True to execute tasks synchronously during tests (no Redis needed)
+CELERY_TASK_ALWAYS_EAGER = os.environ.get('CELERY_TASK_ALWAYS_EAGER', 'False').lower() in ('true', '1', 't', 'yes')
+CELERY_TASK_EAGER_PROPAGATES = CELERY_TASK_ALWAYS_EAGER
+
+# ---------- Email Configuration ----------
+EMAIL_BACKEND = os.environ.get('EMAIL_BACKEND', 'django.core.mail.backends.smtp.EmailBackend')
+EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 587))
+EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True').lower() in ('true', '1', 't', 'yes')
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'CineVerse <noreply@cineverse.app>')
+
 
 

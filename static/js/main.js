@@ -467,5 +467,119 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
+    // ----------------------------------------------------------
+    // 8. Movie Discovery Dynamic Counter & Interactive Filters
+    // ----------------------------------------------------------
+    const discoveryForm = document.getElementById('discovery-filter-form');
+    const matchCountDisplay = document.getElementById('match-count-display');
+    const matchCountSpinner = document.getElementById('match-count-spinner');
+    const citySelect = document.getElementById('filter-city-select');
+    const theaterSelect = document.getElementById('filter-theater-select');
+    const searchInput = document.getElementById('filter-search-input');
+    const clearSearchBtn = document.getElementById('clear-search-btn');
+
+    if (discoveryForm) {
+        let countDebounceTimer = null;
+
+        function fetchLiveMatchCount() {
+            if (!matchCountDisplay) return;
+            if (matchCountSpinner) matchCountSpinner.classList.remove('d-none');
+
+            const formData = new FormData(discoveryForm);
+            const params = new URLSearchParams();
+            for (const [key, value] of formData.entries()) {
+                if (value.trim() !== '') {
+                    params.append(key, value);
+                }
+            }
+
+            fetch(`/movies/api/count/?${params.toString()}`, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data && data.count !== undefined) {
+                    const count = data.count;
+                    matchCountDisplay.textContent = `${count} ${count === 1 ? 'movie' : 'movies'} found`;
+                }
+            })
+            .catch(() => {
+                // Fallback silently if offline or interrupted
+            })
+            .finally(() => {
+                if (matchCountSpinner) matchCountSpinner.classList.add('d-none');
+            });
+        }
+
+        function triggerCountUpdate() {
+            clearTimeout(countDebounceTimer);
+            countDebounceTimer = setTimeout(fetchLiveMatchCount, 250);
+        }
+
+        // Listen for input/change on all filter controls
+        const filterControls = discoveryForm.querySelectorAll('select, input');
+        filterControls.forEach(ctrl => {
+            if (ctrl.tagName === 'INPUT') {
+                ctrl.addEventListener('input', triggerCountUpdate);
+            } else {
+                ctrl.addEventListener('change', triggerCountUpdate);
+            }
+        });
+
+        // Dynamic update of theaters when city changes
+        if (citySelect && theaterSelect) {
+            citySelect.addEventListener('change', function () {
+                const selectedCity = this.value;
+                theaterSelect.disabled = true;
+
+                fetch(`/movies/api/theaters/?city=${encodeURIComponent(selectedCity)}`, {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    theaterSelect.innerHTML = '<option value="">All Theaters</option>';
+                    if (data && data.theaters) {
+                        data.theaters.forEach(t => {
+                            const opt = document.createElement('option');
+                            opt.value = t.id;
+                            opt.textContent = `${t.name} (${t.city})`;
+                            theaterSelect.appendChild(opt);
+                        });
+                    }
+                    theaterSelect.disabled = false;
+                    triggerCountUpdate();
+                })
+                .catch(() => {
+                    theaterSelect.disabled = false;
+                });
+            });
+        }
+
+        // Clear search input button
+        if (clearSearchBtn && searchInput) {
+            clearSearchBtn.addEventListener('click', function () {
+                searchInput.value = '';
+                triggerCountUpdate();
+                discoveryForm.submit();
+            });
+        }
+
+        // Filter chips removal
+        const chipButtons = document.querySelectorAll('.remove-chip-btn');
+        chipButtons.forEach(btn => {
+            btn.addEventListener('click', function () {
+                const fieldName = this.getAttribute('data-field');
+                const field = discoveryForm.querySelector(`[name="${fieldName}"]`);
+                if (field) {
+                    field.value = '';
+                    discoveryForm.submit();
+                }
+            });
+        });
+    }
+
 });
+
 

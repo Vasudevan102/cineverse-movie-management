@@ -503,6 +503,20 @@ class Command(BaseCommand):
                 "poster": "https://images.unsplash.com/photo-1509062522246-3755977927d7?w=600&auto=format&fit=crop&q=80",
                 "backdrop": "https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=1200&auto=format&fit=crop&q=80",
             },
+            {
+                "title": "Interstellar",
+                "description": "When Earth becomes uninhabitable, a team of ex-NASA astronauts travels through a wormhole near Saturn in search of a new home for mankind.",
+                "duration": 169,
+                "age_certificate": "U/A",
+                "language": language_objs["en"],
+                "genres": [genre_objs["Sci-Fi"], genre_objs["Adventure"], genre_objs["Drama"]],
+                "director": "Christopher Nolan",
+                "trailer_url": "https://www.youtube.com/watch?v=zSWdZVtXT7E",
+                "release_date": datetime.date(2014, 11, 7),
+                "rating": 5.0,
+                "poster": "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=600&auto=format&fit=crop&q=80",
+                "backdrop": "https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=1200&auto=format&fit=crop&q=80",
+            },
         ]
 
         created_movies = []

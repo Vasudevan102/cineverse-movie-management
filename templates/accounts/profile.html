@@ -7,19 +7,19 @@
         <!-- Profile Column -->
         <div class="col-lg-4">
             <div class="aurora-card p-4 text-center mb-4">
-                <div class="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3 text-white display-4 shadow" style="width: 100px; height: 100px; background: var(--gradient-aurora); border: 2px solid var(--cyan);">
+                <div class="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3 text-white display-4 shadow profile-avatar">
                     <i class="fa-solid fa-user"></i>
                 </div>
                 <h4 class="fw-bold text-white mb-1">{{ user.username }}</h4>
                 <p class="text-secondary small mb-3">{{ user.email }}</p>
 
                 <!-- CineVerse Membership Badge Card -->
-                <div class="p-3 mb-4 rounded-3 border border-secondary text-start" style="background: rgba(124, 58, 237, 0.12);">
+                <div class="p-3 mb-4 rounded-3 border border-secondary text-start profile-tier-banner">
                     <div class="d-flex justify-content-between align-items-center mb-1">
-                        <span class="small text-uppercase fw-bold text-secondary" style="letter-spacing: 1px;">CineVerse Tier:</span>
-                        <span class="badge bg-purple text-white px-2 py-1" style="background: var(--purple);">LEVEL PASS</span>
+                        <span class="small text-uppercase fw-bold text-secondary ls-wide">CineVerse Tier:</span>
+                        <span class="badge bg-purple text-white px-2 py-1 badge-purple-bg">LEVEL PASS</span>
                     </div>
-                    <h5 class="fw-bold text-white mb-0" style="color: var(--lavender) !important;">
+                    <h5 class="fw-bold text-white mb-0 text-lavender">
                         {{ member_badge }} {{ member_level }}
                     </h5>
                 </div>
@@ -28,25 +28,25 @@
                 <div class="row g-2 mb-4">
                     <div class="col-4">
                         <div class="p-2 rounded-3 bg-dark border border-secondary">
-                            <strong class="fs-4 fw-bold text-purple d-block" style="color: var(--purple);">{{ movies_watched_count }}</strong>
-                            <small class="text-muted" style="font-size: 0.72rem;">Watched</small>
+                            <strong class="fs-4 fw-bold text-purple d-block text-stat-purple">{{ movies_watched_count }}</strong>
+                            <small class="text-muted stat-label">Watched</small>
                         </div>
                     </div>
                     <div class="col-4">
                         <div class="p-2 rounded-3 bg-dark border border-secondary">
-                            <strong class="fs-4 fw-bold text-cyan d-block" style="color: var(--cyan);">{{ bookings.count }}</strong>
-                            <small class="text-muted" style="font-size: 0.72rem;">Bookings</small>
+                            <strong class="fs-4 fw-bold text-cyan d-block text-stat-cyan">{{ bookings.count }}</strong>
+                            <small class="text-muted stat-label">Bookings</small>
                         </div>
                     </div>
                     <div class="col-4">
                         <div class="p-2 rounded-3 bg-dark border border-secondary">
-                            <strong class="fs-4 fw-bold text-pink d-block" style="color: var(--pink);">{{ reviews_count }}</strong>
-                            <small class="text-muted" style="font-size: 0.72rem;">Reviews</small>
+                            <strong class="fs-4 fw-bold text-pink d-block text-stat-pink">{{ reviews_count }}</strong>
+                            <small class="text-muted stat-label">Reviews</small>
                         </div>
                     </div>
                 </div>
 
-                <h6 class="text-start text-white mb-3 fw-bold"><i class="fa-solid fa-user-pen me-2" style="color: var(--cyan);"></i>Update Profile Details</h6>
+                <h6 class="text-start text-white mb-3 fw-bold"><i class="fa-solid fa-user-pen me-2 icon-cyan"></i>Update Profile Details</h6>
                 <form method="POST" action="{% url 'profile' %}">
                     {% csrf_token %}
                     <div class="mb-3 text-start">
@@ -77,7 +77,7 @@
                     </li>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link btn-outline-glass text-white" id="reviews-tab" data-bs-toggle="tab" data-bs-target="#reviews-panel" type="button" role="tab">
-                            <i class="fa-solid fa-star me-2" style="color: var(--accent-gold);"></i>My Reviews ({{ reviews.count }})
+                            <i class="fa-solid fa-star me-2 text-warning"></i>My Reviews ({{ reviews.count }})
                         </button>
                     </li>
                 </ul>
@@ -88,16 +88,24 @@
                         <div class="row g-3">
                             {% for b in bookings %}
                                 <div class="col-md-6">
-                                    <div class="p-3 rounded-3 border border-secondary" style="background: rgba(13, 19, 38, 0.7);">
+                                    <div class="p-3 rounded-3 border border-secondary profile-review-item">
                                         <div class="d-flex justify-content-between align-items-start mb-2">
                                             <strong class="text-white fs-6">{{ b.show.movie.title }}</strong>
                                             <span class="badge bg-warning text-dark">{{ b.booking_reference }}</span>
                                         </div>
-                                        <small class="text-secondary d-block"><i class="fa-solid fa-building me-1" style="color: var(--pink);"></i>{{ b.show.theater.name }}</small>
-                                        <small class="text-secondary d-block"><i class="fa-solid fa-calendar me-1" style="color: var(--purple);"></i>{{ b.show.show_date|date:"M d, Y" }} at {{ b.show.start_time|time:"h:i A" }}</small>
-                                        <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top border-secondary">
-                                            <span class="badge bg-success">{{ b.status }}</span>
-                                            <a href="{% url 'booking_detail' b.booking_reference %}" class="btn btn-sm btn-outline-glass">View Ticket Pass</a>
+                                        <small class="text-secondary d-block"><i class="fa-solid fa-building me-1 icon-pink"></i>{{ b.show.theater.name }}</small>
+                                        <small class="text-secondary d-block"><i class="fa-solid fa-calendar me-1 icon-purple"></i>{{ b.show.show_date|date:"M d, Y" }} at {{ b.show.start_time|time:"h:i A" }}</small>
+                                        <small class="text-secondary d-block mt-1">Seats: <strong class="text-white">{{ b.selected_seats }}</strong> (₹{{ b.total_amount|floatformat:0 }})</small>
+                                        <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top border-secondary flex-wrap gap-2">
+                                            <div class="d-flex gap-1">
+                                                <span class="badge {% if b.status == 'CONFIRMED' %}bg-success{% elif b.status == 'PENDING_PAYMENT' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">{{ b.get_status_display }}</span>
+                                                <span class="badge {% if b.payment_status == 'PAID' %}bg-outline-success text-success border border-success{% elif b.payment_status == 'FAILED' %}bg-outline-danger text-danger border border-danger{% else %}bg-outline-warning text-warning border border-warning{% endif %}">{{ b.get_payment_status_display }}</span>
+                                            </div>
+                                            {% if b.payment_status == 'PAID' %}
+                                                <a href="{% url 'booking_detail' b.booking_reference %}" class="btn btn-sm btn-outline-glass">View Ticket Pass</a>
+                                            {% elif not b.show.is_past %}
+                                                <a href="{% url 'booking_payment' b.booking_reference %}" class="btn btn-sm btn-warning text-dark fw-bold">Pay Now</a>
+                                            {% endif %}
                                         </div>
                                     </div>
                                 </div>
@@ -112,7 +120,7 @@
                         <div class="row g-3">
                             {% for r in reviews %}
                                 <div class="col-12">
-                                    <div class="p-3 rounded-3 border border-secondary" style="background: rgba(13, 19, 38, 0.7);">
+                                    <div class="p-3 rounded-3 border border-secondary profile-review-item">
                                         <div class="d-flex justify-content-between align-items-start mb-2">
                                             <div>
                                                 <h6 class="fw-bold text-white mb-0">{{ r.movie.title }}</h6>

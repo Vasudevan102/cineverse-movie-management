@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Theater, Show, Booking, Payment, SeatReservation
+from .models import Theater, Show, Booking, Payment, SeatReservation, Ticket
 
 class ShowInline(admin.TabularInline):
     model = Show
@@ -40,14 +40,45 @@ class BookingAdmin(admin.ModelAdmin):
 
 @admin.register(Payment)
 class PaymentAdmin(admin.ModelAdmin):
-    list_display = ('transaction_reference', 'booking', 'payment_method', 'ticket_amount', 'convenience_fee', 'taxes', 'grand_total_in_rupees', 'status', 'created_at')
-    list_filter = ('payment_method', 'status', 'created_at')
-    search_fields = ('transaction_reference', 'booking__booking_reference', 'booking__user__username')
-    readonly_fields = ('transaction_reference', 'created_at')
+    list_display = (
+        'transaction_reference',
+        'order_id',
+        'payment_id',
+        'booking',
+        'user',
+        'provider',
+        'payment_method',
+        'grand_total_in_rupees',
+        'status',
+        'refund_status',
+        'created_at',
+        'verified_at'
+    )
+    list_filter = ('status', 'provider', 'payment_method', 'refund_status', 'created_at', 'verified_at')
+    search_fields = (
+        'transaction_reference',
+        'order_id',
+        'payment_id',
+        'refund_id',
+        'booking__booking_reference',
+        'user__username',
+        'user__email'
+    )
+    readonly_fields = (
+        'transaction_reference',
+        'order_id',
+        'payment_id',
+        'signature',
+        'refund_id',
+        'refunded_at',
+        'created_at',
+        'updated_at',
+        'verified_at'
+    )
 
     @admin.display(description='Total Paid')
     def grand_total_in_rupees(self, obj):
-        return f"₹{obj.total_amount:.0f}"
+        return f"₹{obj.total_amount:.2f}"
 
 @admin.register(SeatReservation)
 class SeatReservationAdmin(admin.ModelAdmin):
@@ -59,4 +90,18 @@ class SeatReservationAdmin(admin.ModelAdmin):
     @admin.display(description='Expired?')
     def is_expired_display(self, obj):
         return "Yes" if obj.is_expired else "No"
+
+
+@admin.register(Ticket)
+class TicketAdmin(admin.ModelAdmin):
+    list_display = (
+        'ticket_number', 'booking', 'email_status',
+        'generated_at', 'email_sent_at', 'email_attempts', 'created_at'
+    )
+    list_filter = ('email_status', 'created_at', 'generated_at')
+    search_fields = (
+        'ticket_number', 'verification_token',
+        'booking__booking_reference', 'booking__user__username', 'booking__user__email'
+    )
+    readonly_fields = ('ticket_number', 'verification_token', 'created_at', 'updated_at')
 

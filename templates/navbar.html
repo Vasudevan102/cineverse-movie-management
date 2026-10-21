@@ -3,7 +3,7 @@
         <div class="container-fluid px-2">
             <!-- Brand Logo -->
             <a class="navbar-brand d-flex align-items-center brand-logo" href="{% url 'home' %}">
-                <i class="fa-solid fa-film text-purple me-1" style="color: var(--purple);"></i>
+                <i class="fa-solid fa-film text-purple me-1 icon-purple"></i>
                 <span>Cine</span>Verse
             </a>
 
@@ -37,7 +37,7 @@
                 <div class="d-flex align-items-center gap-2 flex-column flex-lg-row w-100 w-lg-auto">
                     <!-- City Selector Trigger -->
                     <button type="button" class="btn btn-city-trigger w-100 w-lg-auto" data-bs-toggle="modal" data-bs-target="#citySelectorModal">
-                        <i class="fa-solid fa-location-dot" style="color: var(--cyan);"></i>
+                        <i class="fa-solid fa-location-dot icon-cyan"></i>
                         <span id="nav-city-name">{{ selected_city|default:"Chennai" }}</span>
                         <i class="fa-solid fa-chevron-down small text-muted"></i>
                     </button>
@@ -51,18 +51,9 @@
                     {% if user.is_authenticated %}
                         <div class="dropdown w-100 w-lg-auto">
                             <a class="btn btn-outline-glass dropdown-toggle d-flex align-items-center justify-content-between gap-2 px-3 py-2 text-start w-100" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                <span><i class="fa-solid fa-circle-user me-1" style="color: var(--lavender);"></i>{{ user.username }}</span>
+                                <span><i class="fa-solid fa-circle-user me-1 icon-lavender"></i>{{ user.username }}</span>
                             </a>
-                            <ul class="dropdown-menu dropdown-menu-end shadow-lg aurora-card p-2" aria-labelledby="userDropdown">
-                                <li><a class="dropdown-item py-2 rounded-3 text-white" href="{% url 'profile' %}"><i class="fa-solid fa-user me-2 text-muted"></i>My Profile</a></li>
-                                <li><a class="dropdown-item py-2 rounded-3 text-white" href="{% url 'my_bookings' %}"><i class="fa-solid fa-ticket me-2 text-warning"></i>My Bookings</a></li>
-                                {% if user.is_staff %}
-                                    <li><hr class="dropdown-divider border-secondary opacity-25"></li>
-                                    <li><a class="dropdown-item text-warning py-2 rounded-3" href="/admin/" target="_blank"><i class="fa-solid fa-user-shield me-2"></i>Admin Panel</a></li>
-                                {% endif %}
-                                <li><hr class="dropdown-divider border-secondary opacity-25"></li>
-                                <li><a class="dropdown-item text-danger py-2 rounded-3" href="{% url 'logout' %}"><i class="fa-solid fa-right-from-bracket me-2"></i>Logout</a></li>
-                            </ul>
+                            <ul class="dropdown-menu dropdown-menu-end shadow-lg aurora-card p-2" aria-labelledby="userDropdown"><li><a class="dropdown-item py-2 rounded-3 text-white" href="{% url 'profile' %}"><i class="fa-solid fa-user me-2 text-muted"></i>My Profile</a></li><li><a class="dropdown-item py-2 rounded-3 text-white" href="{% url 'my_bookings' %}"><i class="fa-solid fa-ticket me-2 text-warning"></i>My Bookings</a></li><li {% if not user.is_staff %}hidden{% endif %}><hr class="dropdown-divider border-secondary opacity-25"></li><li {% if not user.is_staff %}hidden{% endif %}><a class="dropdown-item text-warning py-2 rounded-3" href="/admin/" target="_blank"><i class="fa-solid fa-user-shield me-2"></i>Admin Panel</a></li><li><hr class="dropdown-divider border-secondary opacity-25"></li><li><a class="dropdown-item text-danger py-2 rounded-3" href="{% url 'logout' %}"><i class="fa-solid fa-right-from-bracket me-2"></i>Logout</a></li></ul>
                         </div>
                     {% else %}
                         <div class="d-flex gap-2 w-100 w-lg-auto">

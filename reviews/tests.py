@@ -1,4 +1,4 @@
-from datetime import date, time
+from datetime import date, time, timedelta
 from decimal import Decimal
 from django.test import TestCase, Client
 from django.contrib.auth import get_user_model
@@ -42,7 +42,7 @@ class ReviewsTestCase(TestCase):
             movie=self.movie,
             theater=self.theater,
             screen='Screen 2',
-            show_date=date(2026, 8, 20),
+            show_date=date.today() + timedelta(days=2),
             start_time=time(19, 0),
             end_time=time(21, 30),
             ticket_price=Decimal('220.00'),

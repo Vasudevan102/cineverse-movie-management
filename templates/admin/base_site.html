@@ -1,0 +1,9 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block userlinks %}
+    <a href="{% url 'admin_dashboard' %}" style="background: linear-gradient(135deg, #0d6efd, #6610f2); color: #fff; padding: 4px 10px; border-radius: 4px; font-weight: bold; margin-right: 10px; text-decoration: none;">
+        📊 Analytics Dashboard
+    </a>
+    {{ block.super }}
+{% endblock %}

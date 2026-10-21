@@ -1,88 +1,304 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Explore Movies — CineVerse{% endblock %}
+{% block title %}Movie Discovery — Explore & Book Cinema Shows | CineVerse{% endblock %}
 
 {% block content %}
-<div class="container">
-    <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+<div class="container pb-5">
+
+    <!-- Discovery Header & Live Match Counter -->
+    <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
         <div>
-            <h2 class="fw-bold text-white mb-1"><i class="fa-solid fa-clapperboard text-danger me-2"></i>Explore Movie Catalog</h2>
-            <p class="text-secondary mb-0">Discover top blockbusters, filter by genre, language & user ratings.</p>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <span class="badge bg-purple-subtle text-purple px-3 py-1 rounded-pill border border-purple-subtle small fw-bold">
+                    <i class="fa-solid fa-compass me-1"></i>DISCOVERY HUB
+                </span>
+                {% if selected_city %}
+                    <span class="badge bg-cyan-subtle text-cyan px-3 py-1 rounded-pill border border-cyan-subtle small">
+                        <i class="fa-solid fa-location-dot me-1"></i>{{ selected_city }}
+                    </span>
+                {% endif %}
+            </div>
+            <h1 class="fw-bold text-white fs-2 mb-1">Explore Movies & Showtimes</h1>
+            <p class="text-secondary mb-0">Search titles, filter by genres, languages, theaters, show schedules & ratings.</p>
         </div>
-        {% if selected_genre or selected_language %}
-            <a href="{% url 'movie_list' %}" class="btn btn-sm btn-outline-glass text-danger"><i class="fa-solid fa-xmark me-1"></i>Clear Filters</a>
-        {% endif %}
+
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <!-- Dynamic Match Count Badge -->
+            <div id="match-count-badge" class="badge-match-count d-flex align-items-center gap-2 px-3 py-2 rounded-pill glass-card border border-secondary" aria-live="polite">
+                <i class="fa-solid fa-film text-purple icon-purple"></i>
+                <span id="match-count-display" class="fw-bold text-white">
+                    {{ match_count }} {% if match_count == 1 %}movie{% else %}movies{% endif %} found
+                </span>
+                <span id="match-count-spinner" class="spinner-border spinner-border-sm text-cyan d-none" role="status" aria-hidden="true"></span>
+            </div>
+
+            {% if active_filters_applied %}
+                <a href="{% url 'movie_list' %}" class="btn btn-sm btn-outline-glass text-danger py-2 px-3 rounded-pill" title="Reset all applied search and filters">
+                    <i class="fa-solid fa-rotate-left me-1"></i>Reset Filters
+                </a>
+            {% endif %}
+        </div>
     </div>
 
-    <!-- Filter Bar -->
-    <div class="p-3 mb-4" style="background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
-        <form method="GET" action="{% url 'movie_list' %}" class="row g-3 align-items-end">
-            <div class="col-md-3">
-                <label class="form-label text-secondary small fw-bold">Search Keywords</label>
-                {{ form.q }}
+    <!-- Personalized "Recommended for You" Rail (if available) -->
+    {% if recommended_movies %}
+    <div class="mb-5">
+        <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+            <div class="d-flex align-items-center gap-2">
+                <div class="recommendation-badge-icon">
+                    <i class="fa-solid fa-wand-magic-sparkles text-warning fs-5"></i>
+                </div>
+                <div>
+                    <h4 class="fw-bold text-white mb-0">Recommended for You</h4>
+                    <small class="text-secondary">
+                        {% if user.is_authenticated %}
+                            Personalized picks curated from your bookings, views & favorite genres
+                        {% else %}
+                            Top picks & trending cinema titles curated for your discovery
+                        {% endif %}
+                    </small>
+                </div>
             </div>
-            <div class="col-md-2">
-                <label class="form-label text-secondary small fw-bold">Genre</label>
-                {{ form.genre }}
+        </div>
+
+        <div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-6 g-3">
+            {% for rec_movie in recommended_movies %}
+                <div class="col">
+                    {% include 'movies/_movie_card.html' with movie=rec_movie %}
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Filter & Search Console -->
+    <div class="p-4 mb-4 filter-panel aurora-card glass-card rounded-4 border border-secondary border-opacity-25 shadow-lg">
+        <form id="discovery-filter-form" method="GET" action="{% url 'movie_list' %}" class="row g-3">
+            
+            <!-- Search Keyword Box (Prominent) -->
+            <div class="col-12 col-md-4">
+                <label for="filter-search-input" class="form-label text-secondary small fw-bold mb-1">
+                    <i class="fa-solid fa-magnifying-glass me-1 text-purple"></i>Search Movie Title
+                </label>
+                <div class="input-group">
+                    <input type="text" name="q" id="filter-search-input" value="{{ search_query }}" class="form-control form-control-cineverse" placeholder="e.g. Inception, Leo, Amaran..." autocomplete="off">
+                    {% if search_query %}
+                        <button class="btn btn-outline-glass border-start-0" type="button" id="clear-search-btn" title="Clear search text">
+                            <i class="fa-solid fa-xmark text-muted"></i>
+                        </button>
+                    {% endif %}
+                </div>
             </div>
-            <div class="col-md-2">
-                <label class="form-label text-secondary small fw-bold">Language</label>
-                {{ form.language }}
+
+            <!-- Genre Selector -->
+            <div class="col-6 col-sm-4 col-md-2">
+                <label for="filter-genre-select" class="form-label text-secondary small fw-bold mb-1">
+                    <i class="fa-solid fa-masks-theater me-1 text-cyan"></i>Genre
+                </label>
+                <select name="genre" id="filter-genre-select" class="form-select form-select-cineverse">
+                    <option value="">All Genres</option>
+                    {% for g in genres %}
+                        <option value="{{ g.slug }}" {% if selected_genre == g.slug %}selected{% endif %}>{{ g.name }}</option>
+                    {% endfor %}
+                </select>
             </div>
-            <div class="col-md-2">
-                <label class="form-label text-secondary small fw-bold">Min Rating</label>
-                {{ form.rating }}
+
+            <!-- Language Selector -->
+            <div class="col-6 col-sm-4 col-md-2">
+                <label for="filter-language-select" class="form-label text-secondary small fw-bold mb-1">
+                    <i class="fa-solid fa-language me-1 text-pink"></i>Language
+                </label>
+                <select name="language" id="filter-language-select" class="form-select form-select-cineverse">
+                    <option value="">All Languages</option>
+                    {% for l in languages %}
+                        <option value="{{ l.code }}" {% if selected_language == l.code %}selected{% endif %}>{{ l.name }}</option>
+                    {% endfor %}
+                </select>
             </div>
-            <div class="col-md-2">
-                <label class="form-label text-secondary small fw-bold">Sort Order</label>
-                {{ form.sort_by }}
+
+            <!-- City Selector -->
+            <div class="col-6 col-sm-4 col-md-2">
+                <label for="filter-city-select" class="form-label text-secondary small fw-bold mb-1">
+                    <i class="fa-solid fa-location-dot me-1 text-warning"></i>City
+                </label>
+                <select name="city" id="filter-city-select" class="form-select form-select-cineverse">
+                    <option value="">All Cities</option>
+                    {% for c in cities %}
+                        <option value="{{ c }}" {% if selected_city|lower == c|lower %}selected{% endif %}>{{ c }}</option>
+                    {% endfor %}
+                </select>
             </div>
-            <div class="col-md-1 text-end">
-                <button type="submit" class="btn btn-accent w-100 fw-bold" aria-label="Apply filters"><i class="fa-solid fa-filter"></i></button>
+
+            <!-- Theater Selector (Auto updates with selected city) -->
+            <div class="col-6 col-sm-6 col-md-2">
+                <label for="filter-theater-select" class="form-label text-secondary small fw-bold mb-1">
+                    <i class="fa-solid fa-building me-1 text-info"></i>Theater
+                </label>
+                <select name="theater" id="filter-theater-select" class="form-select form-select-cineverse">
+                    <option value="">All Theaters</option>
+                    {% for t in theaters %}
+                        <option value="{{ t.id }}" {% if selected_theater|stringformat:"s" == t.id|stringformat:"s" %}selected{% endif %}>{{ t.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Release Date Preset Filter -->
+            <div class="col-6 col-sm-6 col-md-3">
+                <label for="filter-release-select" class="form-label text-secondary small fw-bold mb-1">
+                    <i class="fa-regular fa-calendar me-1 text-lavender"></i>Release Date
+                </label>
+                <select name="release_date" id="filter-release-select" class="form-select form-select-cineverse">
+                    <option value="">All Releases</option>
+                    <option value="recent" {% if selected_release_date == 'recent' %}selected{% endif %}>New & Recent (Last 60 Days)</option>
+                    <option value="upcoming" {% if selected_release_date == 'upcoming' %}selected{% endif %}>Coming Soon / Upcoming</option>
+                    <option value="past_year" {% if selected_release_date == 'past_year' %}selected{% endif %}>Released in Past Year</option>
+                </select>
+            </div>
+
+            <!-- Minimum Rating Filter -->
+            <div class="col-6 col-sm-4 col-md-3">
+                <label for="filter-rating-select" class="form-label text-secondary small fw-bold mb-1">
+                    <i class="fa-solid fa-star me-1 text-warning"></i>Min Rating
+                </label>
+                <select name="rating" id="filter-rating-select" class="form-select form-select-cineverse">
+                    <option value="">All Ratings</option>
+                    <option value="4.5" {% if selected_rating == '4.5' %}selected{% endif %}>⭐⭐⭐⭐½ 4.5+ Stars</option>
+                    <option value="4" {% if selected_rating == '4' %}selected{% endif %}>⭐⭐⭐⭐ 4.0+ Stars</option>
+                    <option value="3" {% if selected_rating == '3' %}selected{% endif %}>⭐⭐⭐ 3.0+ Stars</option>
+                    <option value="2" {% if selected_rating == '2' %}selected{% endif %}>⭐⭐ 2.0+ Stars</option>
+                </select>
+            </div>
+
+            <!-- Show Timing Filter -->
+            <div class="col-6 col-sm-4 col-md-3">
+                <label for="filter-showtime-select" class="form-label text-secondary small fw-bold mb-1">
+                    <i class="fa-regular fa-clock me-1 text-cyan"></i>Show Timing
+                </label>
+                <select name="show_time" id="filter-showtime-select" class="form-select form-select-cineverse">
+                    <option value="">All Timings</option>
+                    <option value="morning" {% if selected_show_time == 'morning' %}selected{% endif %}>🌅 Morning (6 AM – 12 PM)</option>
+                    <option value="afternoon" {% if selected_show_time == 'afternoon' %}selected{% endif %}>☀️ Afternoon (12 PM – 5 PM)</option>
+                    <option value="evening" {% if selected_show_time == 'evening' %}selected{% endif %}>🌆 Evening (5 PM – 9 PM)</option>
+                    <option value="night" {% if selected_show_time == 'night' %}selected{% endif %}>🌙 Night (9 PM – 6 AM)</option>
+                </select>
+            </div>
+
+            <!-- Sort By Control -->
+            <div class="col-12 col-sm-4 col-md-3">
+                <label for="filter-sort-select" class="form-label text-secondary small fw-bold mb-1">
+                    <i class="fa-solid fa-arrow-down-short-wide me-1 text-pink"></i>Sort Order
+                </label>
+                <select name="sort" id="filter-sort-select" class="form-select form-select-cineverse">
+                    <option value="popularity" {% if selected_sort == 'popularity' or selected_sort == '-popularity' %}selected{% endif %}>🔥 Popularity (Bookings)</option>
+                    <option value="newest" {% if selected_sort == 'newest' or selected_sort == '-release_date' %}selected{% endif %}>📅 Newest Releases</option>
+                    <option value="rating" {% if selected_sort == 'rating' or selected_sort == '-average_rating' %}selected{% endif %}>⭐ Highest Rated</option>
+                    <option value="price_asc" {% if selected_sort == 'price_asc' or selected_sort == 'price' %}selected{% endif %}>🏷️ Ticket Price: Low to High</option>
+                    <option value="price_desc" {% if selected_sort == 'price_desc' %}selected{% endif %}>🏷️ Ticket Price: High to Low</option>
+                    <option value="title" {% if selected_sort == 'title' %}selected{% endif %}>🔤 Title (A–Z)</option>
+                </select>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="col-12 d-flex align-items-center justify-content-between pt-2 flex-wrap gap-2 border-top border-secondary border-opacity-25 mt-3">
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <button type="submit" class="btn btn-accent px-4 py-2 fw-bold" id="apply-filters-btn">
+                        <i class="fa-solid fa-filter me-2"></i>Apply Filters
+                    </button>
+                    <a href="{% url 'movie_list' %}" class="btn btn-outline-glass px-3 py-2 text-white">
+                        <i class="fa-solid fa-rotate-left me-1"></i>Reset
+                    </a>
+                </div>
+                <div class="text-secondary small">
+                    <span id="quick-status-note">Adjust filters to refine movie shows.</span>
+                </div>
             </div>
         </form>
     </div>
 
-    <!-- Movie Grid -->
-    <div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-6 g-3 mb-4">
+    <!-- Active Filter Badges / Chips -->
+    {% if active_filters_applied %}
+    <div class="d-flex align-items-center gap-2 flex-wrap mb-4">
+        <span class="text-secondary small fw-bold">Active Criteria:</span>
+        {% if search_query %}
+            <span class="filter-chip">
+                Search: "<strong>{{ search_query }}</strong>"
+                <a href="javascript:void(0)" class="remove-chip-btn" data-field="q" title="Remove search filter" aria-label="Remove search filter"><i class="fa-solid fa-xmark ms-1"></i></a>
+            </span>
+        {% endif %}
+        {% if selected_genre %}
+            <span class="filter-chip">
+                Genre: <strong>{{ selected_genre }}</strong>
+                <a href="javascript:void(0)" class="remove-chip-btn" data-field="genre" title="Remove genre filter" aria-label="Remove genre filter"><i class="fa-solid fa-xmark ms-1"></i></a>
+            </span>
+        {% endif %}
+        {% if selected_language %}
+            <span class="filter-chip">
+                Lang: <strong>{{ selected_language }}</strong>
+                <a href="javascript:void(0)" class="remove-chip-btn" data-field="language" title="Remove language filter" aria-label="Remove language filter"><i class="fa-solid fa-xmark ms-1"></i></a>
+            </span>
+        {% endif %}
+        {% if selected_city %}
+            <span class="filter-chip">
+                City: <strong>{{ selected_city }}</strong>
+                <a href="javascript:void(0)" class="remove-chip-btn" data-field="city" title="Remove city filter" aria-label="Remove city filter"><i class="fa-solid fa-xmark ms-1"></i></a>
+            </span>
+        {% endif %}
+        {% if selected_theater %}
+            <span class="filter-chip">
+                Theater: <strong>Selected</strong>
+                <a href="javascript:void(0)" class="remove-chip-btn" data-field="theater" title="Remove theater filter" aria-label="Remove theater filter"><i class="fa-solid fa-xmark ms-1"></i></a>
+            </span>
+        {% endif %}
+        {% if selected_rating %}
+            <span class="filter-chip">
+                Min Rating: <strong>{{ selected_rating }}★+</strong>
+                <a href="javascript:void(0)" class="remove-chip-btn" data-field="rating" title="Remove rating filter" aria-label="Remove rating filter"><i class="fa-solid fa-xmark ms-1"></i></a>
+            </span>
+        {% endif %}
+        {% if selected_release_date %}
+            <span class="filter-chip">
+                Release: <strong>{{ selected_release_date|title }}</strong>
+                <a href="javascript:void(0)" class="remove-chip-btn" data-field="release_date" title="Remove release filter" aria-label="Remove release filter"><i class="fa-solid fa-xmark ms-1"></i></a>
+            </span>
+        {% endif %}
+        {% if selected_show_time %}
+            <span class="filter-chip">
+                Timing: <strong>{{ selected_show_time|title }}</strong>
+                <a href="javascript:void(0)" class="remove-chip-btn" data-field="show_time" title="Remove timing filter" aria-label="Remove timing filter"><i class="fa-solid fa-xmark ms-1"></i></a>
+            </span>
+        {% endif %}
+        <a href="{% url 'movie_list' %}" class="text-danger small ms-1 text-decoration-none">Clear all</a>
+    </div>
+    {% endif %}
+
+    <!-- Movies Results Grid -->
+    <div id="movie-results-grid" class="row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-6 g-3 mb-4">
         {% for movie in page_obj %}
             <div class="col">
                 {% include 'movies/_movie_card.html' with movie=movie %}
             </div>
         {% empty %}
-            <div class="col-12">
-                <div class="empty-state">
-                    <i class="fa-solid fa-film"></i>
-                    <h4>No Movies Found</h4>
-                    <p>Try adjusting your search terms or filter criteria.</p>
-                    <a href="{% url 'movie_list' %}" class="btn btn-outline-glass mt-2">Reset All Filters</a>
+            <div class="col-12 py-5">
+                <div class="empty-state text-center p-5 aurora-card glass-card rounded-4 border border-secondary border-opacity-25">
+                    <div class="empty-icon-circle mx-auto mb-3">
+                        <i class="fa-solid fa-clapperboard fs-1 text-purple"></i>
+                    </div>
+                    <h3 class="fw-bold text-white mb-2">No Matching Movies Found</h3>
+                    <p class="text-secondary mb-4 mx-auto empty-state-desc">
+                        We couldn't find any movie matching your current search terms or filter combinations.
+                        Try broadening your search or resetting filters to browse our full catalog.
+                    </p>
+                    <a href="{% url 'movie_list' %}" class="btn btn-accent px-4 py-2 fw-bold">
+                        <i class="fa-solid fa-rotate-left me-2"></i>Reset All Discovery Filters
+                    </a>
                 </div>
             </div>
         {% endfor %}
     </div>
 
     <!-- Pagination -->
-    {% if page_obj.has_other_pages %}
-    <nav class="d-flex justify-content-center my-4" aria-label="Movie catalog pagination">
-        <ul class="pagination pagination-dark mb-0">
-            {% if page_obj.has_previous %}
-                <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Previous</a></li>
-            {% endif %}
+    {% include '_pagination.html' with page_obj=page_obj aria_label="Movie catalog pagination" preserve_params=True %}
 
-            {% for page in page_obj.paginator.page_range %}
-                {% if page_obj.number == page %}
-                    <li class="page-item active"><span class="page-link">{{ page }}</span></li>
-                {% elif page > page_obj.number|add:"-3" and page < page_obj.number|add:"3" %}
-                    <li class="page-item"><a class="page-link" href="?page={{ page }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ page }}</a></li>
-                {% endif %}
-            {% endfor %}
-
-            {% if page_obj.has_next %}
-                <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Next</a></li>
-            {% endif %}
-        </ul>
-    </nav>
-    {% endif %}
 </div>
 {% endblock %}

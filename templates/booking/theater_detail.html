@@ -80,7 +80,7 @@
                                 </div>
 
                                 <!-- Showtimes Pills Grid -->
-                                <h6 class="text-white fw-bold mb-2 small text-uppercase" style="letter-spacing: 1px;">Available Showtimes:</h6>
+                                <h6 class="text-white fw-bold mb-2 small text-uppercase ls-wide">Available Showtimes:</h6>
                                 <div class="d-flex flex-wrap gap-2">
                                     {% for show in shows_list %}
                                         <a href="{% url 'booking_create' show.id %}" class="showtime-pill" title="Book for {{ show.show_date|date:'M d' }} at {{ show.start_time|time:'h:i A' }}">

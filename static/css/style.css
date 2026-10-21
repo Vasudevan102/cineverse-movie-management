@@ -182,8 +182,8 @@ img {
 .glass,
 .aurora-card {
     background: var(--bg-card);
-    backdrop-filter: blur(24px) saturate(180%);
     -webkit-backdrop-filter: blur(24px) saturate(180%);
+    backdrop-filter: blur(24px) saturate(180%);
     border: 1px solid var(--glass-border);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-glass);
@@ -198,6 +198,7 @@ img {
 .gradient-text {
     background: var(--gradient-aurora);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
     display: inline-block;
 }
@@ -257,8 +258,16 @@ img {
     to { opacity: 1; transform: scale(1); }
 }
 @keyframes glassReveal {
-    from { opacity: 0; backdrop-filter: blur(0px); }
-    to { opacity: 1; backdrop-filter: blur(24px); }
+    from {
+        opacity: 0;
+        -webkit-backdrop-filter: blur(0px);
+        backdrop-filter: blur(0px);
+    }
+    to {
+        opacity: 1;
+        -webkit-backdrop-filter: blur(24px);
+        backdrop-filter: blur(24px);
+    }
 }
 
 @keyframes floatPoster {
@@ -278,8 +287,8 @@ img {
 
 .navbar-cineverse {
     background: rgba(13, 19, 38, 0.72) !important;
-    backdrop-filter: blur(30px) saturate(190%);
     -webkit-backdrop-filter: blur(30px) saturate(190%);
+    backdrop-filter: blur(30px) saturate(190%);
     border: 1px solid var(--glass-border);
     border-radius: var(--radius-xl);
     padding: 0.6rem 1.4rem;
@@ -308,6 +317,7 @@ img {
 .brand-logo span {
     background: var(--gradient-aurora);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 
@@ -337,6 +347,7 @@ img {
     display: inline-flex;
     align-items: center;
     gap: 6px;
+    -webkit-backdrop-filter: blur(12px);
     backdrop-filter: blur(12px);
     transition: all var(--transition-fast);
 }
@@ -357,8 +368,8 @@ img {
     right: 16px;
     height: 60px;
     background: rgba(13, 19, 38, 0.88);
-    backdrop-filter: blur(30px) saturate(180%);
     -webkit-backdrop-filter: blur(30px) saturate(180%);
+    backdrop-filter: blur(30px) saturate(180%);
     border: 1px solid var(--glass-border);
     border-radius: var(--radius-xl);
     display: flex;
@@ -429,6 +440,7 @@ img {
     background: rgba(255, 255, 255, 0.05);
     color: var(--text-main) !important;
     border: 1px solid var(--glass-border);
+    -webkit-backdrop-filter: blur(12px);
     backdrop-filter: blur(12px);
     font-weight: 600;
     border-radius: var(--radius-sm);
@@ -565,8 +577,8 @@ img {
     height: 44px;
     border-radius: 50%;
     background: rgba(13, 19, 38, 0.65);
-    backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(16px);
     border: 1px solid var(--glass-border);
     color: var(--text-main);
     display: flex;
@@ -600,8 +612,8 @@ img {
     gap: 10px;
     padding: 8px 18px;
     background: rgba(13, 19, 38, 0.65);
-    backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(16px);
     border: 1px solid var(--glass-border);
     border-radius: 30px;
 }
@@ -622,10 +634,6 @@ img {
     border-radius: 10px;
     background: var(--gradient-aurora);
     box-shadow: 0 0 14px rgba(124, 58, 237, 0.6);
-}
-    border-radius: 10px;
-    background: var(--gradient-aurora);
-    box-shadow: 0 0 12px var(--purple);
 }
 
 /* ---------- Section Headers ---------- */
@@ -663,8 +671,8 @@ img {
 /* ---------- Movie Card System ---------- */
 .movie-card-modern {
     background: var(--bg-card);
-    backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(20px);
     border: 1px solid var(--glass-border);
     border-radius: var(--radius-lg);
     overflow: hidden;
@@ -712,6 +720,7 @@ img {
     font-size: 0.8rem;
     font-weight: 800;
     z-index: 2;
+    -webkit-backdrop-filter: blur(10px);
     backdrop-filter: blur(10px);
 }
 
@@ -788,7 +797,7 @@ img {
     border: 1px solid var(--glass-border);
     border-radius: var(--radius-md);
     padding: 1.5rem 1rem;
-    text-center: center;
+    text-align: center;
     transition: all var(--transition-base);
     color: var(--text-main);
     display: flex;
@@ -873,6 +882,7 @@ img {
     border: 1px solid var(--glass-border);
     color: #fff;
     position: relative;
+    -webkit-user-select: none;
     user-select: none;
 }
 
@@ -1134,8 +1144,8 @@ img {
 /* Liquid Glass Utilities */
 .glass {
     background: var(--surface);
-    backdrop-filter: blur(25px) saturate(160%);
     -webkit-backdrop-filter: blur(25px) saturate(160%);
+    backdrop-filter: blur(25px) saturate(160%);
     border: 1px solid var(--glass-border);
     box-shadow: var(--shadow-glass);
     border-radius: var(--radius-lg);
@@ -1143,8 +1153,8 @@ img {
 
 .glass-panel {
     background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(20px) saturate(150%);
     -webkit-backdrop-filter: blur(20px) saturate(150%);
+    backdrop-filter: blur(20px) saturate(150%);
     border: 1px solid rgba(255, 255, 255, 0.12);
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
     border-radius: var(--radius-md);
@@ -1152,8 +1162,8 @@ img {
 
 .glass-card {
     background: var(--surface);
-    backdrop-filter: blur(24px) saturate(150%);
     -webkit-backdrop-filter: blur(24px) saturate(150%);
+    backdrop-filter: blur(24px) saturate(150%);
     border: 1px solid var(--glass-border);
     box-shadow: var(--shadow-glass);
     border-radius: var(--radius-lg);
@@ -1196,8 +1206,8 @@ img {
 /* Navbar */
 .navbar-cineverse {
     background: rgba(7, 7, 10, 0.75) !important;
-    backdrop-filter: blur(25px) saturate(160%);
     -webkit-backdrop-filter: blur(25px) saturate(160%);
+    backdrop-filter: blur(25px) saturate(160%);
     border-bottom: 1px solid var(--glass-border);
     min-height: 72px;
     transition: all var(--transition-base);
@@ -1264,6 +1274,7 @@ img {
     display: inline-flex;
     align-items: center;
     gap: 6px;
+    -webkit-backdrop-filter: blur(12px);
     backdrop-filter: blur(12px);
     transition: all var(--transition-fast);
 }
@@ -1283,8 +1294,8 @@ img {
     right: 0;
     height: 64px;
     background: rgba(7, 7, 10, 0.88);
-    backdrop-filter: blur(30px) saturate(180%);
     -webkit-backdrop-filter: blur(30px) saturate(180%);
+    backdrop-filter: blur(30px) saturate(180%);
     border-top: 1px solid var(--glass-border);
     display: flex;
     align-items: center;
@@ -1351,6 +1362,7 @@ img {
     background: rgba(255, 255, 255, 0.05);
     color: var(--text-primary) !important;
     border: 1px solid var(--glass-border);
+    -webkit-backdrop-filter: blur(12px);
     backdrop-filter: blur(12px);
     font-weight: 600;
     border-radius: var(--radius-sm);
@@ -1478,8 +1490,8 @@ img {
     height: 48px;
     border-radius: 50%;
     background: rgba(7, 7, 10, 0.65);
-    backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
     border: 1px solid var(--glass-border);
     color: var(--text-primary);
     display: flex;
@@ -1513,6 +1525,7 @@ img {
     gap: 10px;
     padding: 8px 16px;
     background: rgba(7, 7, 10, 0.55);
+    -webkit-backdrop-filter: blur(10px);
     backdrop-filter: blur(10px);
     border: 1px solid var(--glass-border);
     border-radius: 30px;
@@ -1653,8 +1666,8 @@ img {
 /* Movie Card System */
 .movie-card-modern {
     background: var(--surface);
-    backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(20px);
     border: 1px solid var(--glass-border);
     border-radius: var(--radius-lg);
     overflow: hidden;
@@ -1755,6 +1768,7 @@ img {
     border-radius: 4px;
     font-size: 0.7rem;
     font-weight: 700;
+    -webkit-backdrop-filter: blur(8px);
     backdrop-filter: blur(8px);
     z-index: 2;
 }
@@ -1771,6 +1785,7 @@ img {
     font-size: 0.78rem;
     font-weight: 700;
     z-index: 2;
+    -webkit-backdrop-filter: blur(8px);
     backdrop-filter: blur(8px);
 }
 
@@ -1905,8 +1920,8 @@ img {
 /* Theater Cards */
 .theater-card {
     background: var(--surface);
-    backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(20px);
     border: 1px solid var(--glass-border);
     border-radius: var(--radius-lg);
     padding: 1.25rem;
@@ -1954,8 +1969,8 @@ img {
 /* Modals */
 .modal-glass .modal-content {
     background: rgba(14, 14, 20, 0.94) !important;
-    backdrop-filter: blur(30px) saturate(180%);
     -webkit-backdrop-filter: blur(30px) saturate(180%);
+    backdrop-filter: blur(30px) saturate(180%);
     border: 1px solid var(--glass-border);
     border-radius: var(--radius-xl);
     color: var(--text-primary);
@@ -2168,4 +2183,400 @@ select:focus-visible {
     border-radius: 4px;
     transition: width 0.5s ease-in-out;
 }
+
+/* Payment Checkout Utility Classes */
+.container-payment-max {
+    max-width: 960px;
+}
+
+.payment-card-bg {
+    background: rgba(124, 58, 237, 0.12);
+}
+
+.tracking-wide {
+    letter-spacing: 0.5px;
+}
+
+.poster-thumb-size {
+    width: 70px;
+    height: 100px;
+}
+
+.container-960 {
+    max-width: 960px;
+}
+
+.screen-direction-label {
+    letter-spacing: 2px;
+}
+
+.seat-label-badge {
+    width: 20px;
+    display: inline-block;
+    text-align: center;
+}
+
+.seat-divider-line {
+    max-width: 480px;
+    margin: 0 auto;
+}
+
+.progress-thin {
+    height: 8px;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.progress-micro {
+    height: 6px;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.progress-nano {
+    height: 5px;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+/* ---------- Container Width Utilities ---------- */
+.container-400 { max-width: 400px; }
+.container-580 { max-width: 580px; }
+.container-600 { max-width: 600px; }
+.container-680 { max-width: 680px; }
+
+/* ---------- Footer ---------- */
+.footer-text-tiny { font-size: 0.75rem; }
+
+/* ---------- Glass Card Panels ---------- */
+.panel-glass {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+}
+
+.panel-glass-md {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+}
+
+.panel-surface {
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+}
+
+/* ---------- Modal Backgrounds ---------- */
+.modal-aurora-bg {
+    background: rgba(13, 19, 38, 0.94);
+    -webkit-backdrop-filter: blur(30px);
+    backdrop-filter: blur(30px);
+}
+
+/* ---------- Icon Color Utilities ---------- */
+.icon-purple  { color: var(--purple); }
+.icon-cyan    { color: var(--cyan); }
+.icon-lavender { color: var(--lavender); }
+.icon-pink    { color: var(--pink); }
+
+/* ---------- Input Group Border Color Utility ---------- */
+.ig-glass-border {
+    border-color: var(--glass-border) !important;
+}
+
+/* ---------- Section Heading Letter-spacing ---------- */
+.ls-wide { letter-spacing: 1px; }
+
+/* ---------- Review / Movie Detail Text ---------- */
+.hero-title-responsive {
+    font-size: clamp(1.8rem, 4.5vw, 3.2rem);
+}
+
+.text-lh-175 { line-height: 1.75; }
+.text-lh-165 { line-height: 1.65; }
+
+/* ---------- Cast / Crew Card ---------- */
+.cast-photo {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border: 2px solid var(--accent);
+}
+
+.cast-avatar {
+    width: 80px;
+    height: 80px;
+    background: var(--bg-secondary);
+    border: 2px solid var(--border-color);
+}
+
+.cast-name { font-size: 0.88rem; }
+.cast-role { font-size: 0.78rem; }
+
+/* ---------- Review Rating Bar ---------- */
+.star-faded { opacity: 0.3; }
+.rating-bar-label { width: 45px; }
+.rating-bar-count { width: 36px; text-align: right; }
+.rating-bar-count-sm { font-size: 0.65rem; }
+
+/* ---------- Review Warning Banner ---------- */
+.review-warning-banner {
+    background: rgba(255, 193, 7, 0.06);
+    border: 1px solid rgba(255, 193, 7, 0.15);
+    border-radius: var(--radius-md);
+}
+
+/* ---------- Review Item Panel ---------- */
+.review-item-panel {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+}
+
+.review-comment { line-height: 1.65; }
+
+/* ---------- Review Action Border ---------- */
+.border-top-token { border-top: 1px solid var(--border-color); }
+
+/* ---------- Gold Button Variant ---------- */
+.btn-outline-gold {
+    border-color: var(--accent-gold) !important;
+    color: var(--accent-gold) !important;
+}
+
+.btn-outline-gold:hover {
+    background: rgba(245, 158, 11, 0.12);
+    color: var(--accent-gold) !important;
+}
+
+/* ---------- Accent Text Button ---------- */
+.btn-outline-accent {
+    color: var(--accent) !important;
+}
+
+/* ---------- Search Input Transparent ---------- */
+.input-transparent {
+    background: transparent !important;
+}
+
+/* ---------- Movie Card Partial Overrides ---------- */
+.movie-genre-pill { font-size: 0.72rem; }
+.movie-card-action-btn { font-size: 0.8rem; }
+
+/* ---------- Movie List Filter Panel ---------- */
+.filter-panel {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+}
+
+/* ---------- Show List Inline Style Replacements ---------- */
+.show-list-heading-icon { color: var(--cyan); }
+.show-list-theater-icon { color: var(--pink); }
+
+/* ---------- Gallery Image ---------- */
+.gallery-img {
+    border-radius: var(--radius-md);
+    width: 100%;
+    object-fit: cover;
+}
+
+/* ---------- Cast Card Hover ---------- */
+.cast-card-hover {
+    transition: transform var(--transition-base), box-shadow var(--transition-base);
+}
+
+.cast-card-hover:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-card);
+}
+
+/* ---------- Account / Auth Pages ---------- */
+.container-480 { max-width: 480px; }
+.container-540 { max-width: 540px; }
+.container-720 { max-width: 720px; }
+
+/* Auth input dark background */
+.input-auth-bg { background: rgba(13, 19, 38, 0.8) !important; }
+
+/* Auth link colors */
+.link-cyan  { color: var(--cyan) !important; }
+.link-purple { color: var(--purple) !important; }
+
+/* Error text (form field errors) */
+.text-error-pink { color: var(--pink) !important; }
+
+/* Profile stats number colors */
+.text-stat-purple { color: var(--purple) !important; }
+.text-stat-cyan   { color: var(--cyan) !important; }
+.text-stat-pink   { color: var(--pink) !important; }
+
+/* Profile stat label */
+.stat-label { font-size: 0.72rem; }
+
+/* Profile Avatar Circle */
+.profile-avatar {
+    width: 100px;
+    height: 100px;
+    background: var(--gradient-aurora);
+    border: 2px solid var(--cyan);
+}
+
+/* Profile Tier Banner */
+.profile-tier-banner {
+    background: rgba(124, 58, 237, 0.12);
+}
+
+/* Profile tier badge */
+.badge-purple-bg { background: var(--purple) !important; }
+
+/* Profile heading lavender */
+.text-lavender { color: var(--lavender) !important; }
+
+/* Profile review item */
+.profile-review-item { background: rgba(13, 19, 38, 0.7); }
+
+/* ---------- Booking Success ---------- */
+.container-720 { max-width: 720px; }
+
+.success-checkmark {
+    width: 80px;
+    height: 80px;
+    font-size: 2.5rem;
+    box-shadow: 0 0 25px var(--success) !important;
+}
+
+.ticket-title-ls { letter-spacing: 1px; }
+
+.ticket-notch {
+    width: 24px;
+    height: 24px;
+}
+
+.ticket-notch-left  { left:  -26px !important; }
+.ticket-notch-right { right: -26px !important; }
+
+.booking-ref-label { letter-spacing: 1px; }
+
+/* ---------- My Bookings ---------- */
+.bookings-filter-border { border-color: var(--glass-border) !important; }
+
+.booking-label-ls { letter-spacing: 0.5px; }
+
+.bookings-empty-icon {
+    width: 70px;
+    height: 70px;
+    font-size: 2rem;
+    border: 1px solid var(--glass-border);
+}
+
+.booking-toast {
+    z-index: 1100;
+    min-width: 250px;
+}
+
+/* ---------- Theater List ---------- */
+.theater-city-scroll {
+    white-space: nowrap;
+    overflow-x: auto;
+}
+
+/* ---------- Error Pages ---------- */
+.error-page-container { max-width: 600px; }
+
+/* ---------- Show List Theater Icon ---------- */
+.show-list-heading-icon { color: var(--cyan); }
+.show-list-theater-icon { color: var(--pink); }
+
+/* ---------- Movie Discovery System (Task 5) ---------- */
+.badge-match-count {
+    background: rgba(124, 58, 237, 0.15);
+    border: 1px solid rgba(124, 58, 237, 0.4) !important;
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    transition: var(--transition-fast);
+}
+
+.badge-match-count:hover {
+    background: rgba(124, 58, 237, 0.25);
+    border-color: rgba(124, 58, 237, 0.6) !important;
+    box-shadow: 0 0 16px rgba(124, 58, 237, 0.35);
+}
+
+.recommendation-badge-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(245, 158, 11, 0.15);
+    border: 1px solid rgba(245, 158, 11, 0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.filter-chip {
+    display: inline-flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 0.82rem;
+    color: var(--text-main);
+    transition: var(--transition-fast);
+}
+
+.filter-chip:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.25);
+}
+
+.filter-chip a {
+    color: var(--text-muted);
+    text-decoration: none;
+    margin-left: 6px;
+    transition: color 0.15s ease;
+}
+
+.filter-chip a:hover {
+    color: #ef4444;
+}
+
+.empty-icon-circle {
+    width: 84px;
+    height: 84px;
+    border-radius: 50%;
+    background: rgba(124, 58, 237, 0.12);
+    border: 1px solid rgba(124, 58, 237, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.empty-state-desc {
+    max-width: 500px;
+}
+
+/* ---------- Ticket Verification Helpers ---------- */
+.ticket-verify-icon-lg {
+    width: 70px;
+    height: 70px;
+    font-size: 28px;
+}
+
+.ticket-verify-poster {
+    width: 60px;
+    height: 85px;
+    flex-shrink: 0;
+}
+
+.ticket-verify-poster-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.ticket-verify-label {
+    letter-spacing: 1px;
+    font-size: 0.7rem;
+}
+
 

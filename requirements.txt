@@ -5,4 +5,8 @@ python-dotenv>=1.0.0
 whitenoise>=6.6.0
 dj-database-url>=2.1.0
 psycopg2-binary>=2.9.9
-
+razorpay>=1.4.1
+celery>=5.3.0
+redis>=5.0.0
+reportlab>=4.0.0
+qrcode>=7.4.0

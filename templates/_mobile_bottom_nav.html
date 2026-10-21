@@ -13,7 +13,7 @@
         <span>Bookings</span>
     </a>
     <button type="button" class="mobile-nav-item border-0 bg-transparent" data-bs-toggle="modal" data-bs-target="#citySelectorModal">
-        <i class="fa-solid fa-location-dot" style="color: var(--cyan);"></i>
+        <i class="fa-solid fa-location-dot icon-cyan"></i>
         <span>City</span>
     </button>
     <a href="{% url 'profile' %}" class="mobile-nav-item {% if request.resolver_match.url_name == 'profile' %}active{% endif %}">

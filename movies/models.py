@@ -1,6 +1,9 @@
 import re
 from django.db import models
 from django.utils.text import slugify
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 class Language(models.Model):
     name = models.CharField(max_length=50, unique=True)
@@ -62,7 +65,7 @@ class Movie(models.Model):
     title = models.CharField(max_length=200, db_index=True)
     slug = models.SlugField(max_length=220, unique=True, blank=True)
     description = models.TextField()
-    release_date = models.DateField()
+    release_date = models.DateField(db_index=True)
     duration = models.PositiveIntegerField(help_text="Duration in minutes")
     age_certificate = models.CharField(max_length=5, choices=AGE_CERTIFICATE_CHOICES, default='U/A')
     language = models.ForeignKey(Language, on_delete=models.SET_NULL, null=True, related_name='movies')
@@ -70,14 +73,18 @@ class Movie(models.Model):
     cast = models.ManyToManyField(CastMember, related_name='movies', blank=True)
     director = models.CharField(max_length=100)
     trailer_url = models.URLField(help_text="YouTube URL e.g. https://www.youtube.com/watch?v=VIDEO_ID or https://youtu.be/VIDEO_ID")
-    average_rating = models.DecimalField(max_digits=3, decimal_places=2, default=0.00)
+    average_rating = models.DecimalField(max_digits=3, decimal_places=2, default=0.00, db_index=True)
     total_reviews = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    is_active = models.BooleanField(default=True)
+    is_active = models.BooleanField(default=True, db_index=True)
 
     class Meta:
         ordering = ['-release_date', 'title']
+        indexes = [
+            models.Index(fields=['is_active', '-release_date'], name='movie_active_release_idx'),
+            models.Index(fields=['is_active', '-average_rating'], name='movie_active_rating_idx'),
+        ]
 
     def save(self, *args, **kwargs):
         if not self.slug or re.search(r'[^a-zA-Z0-9_-]', self.slug):
@@ -123,6 +130,17 @@ class Movie(models.Model):
 
     @property
     def primary_poster(self):
+        # Prevent N+1 queries by checking Django prefetch cache first
+        if hasattr(self, '_prefetched_objects_cache') and 'images' in self._prefetched_objects_cache:
+            imgs = list(self.images.all())
+            primary = next((img for img in imgs if img.is_primary and img.image_type == 'poster'), None) or next((img for img in imgs if img.is_primary), None)
+            if primary and primary.display_url:
+                return primary.display_url
+            first_poster = next((img for img in imgs if img.image_type == 'poster'), None) or (imgs[0] if imgs else None)
+            if first_poster and first_poster.display_url:
+                return first_poster.display_url
+            return None
+
         primary_image = self.images.filter(is_primary=True, image_type='poster').first() or self.images.filter(is_primary=True).first()
         if primary_image and primary_image.display_url:
             return primary_image.display_url
@@ -133,6 +151,13 @@ class Movie(models.Model):
 
     @property
     def backdrop_url(self):
+        if hasattr(self, '_prefetched_objects_cache') and 'images' in self._prefetched_objects_cache:
+            imgs = list(self.images.all())
+            backdrop_image = next((img for img in imgs if img.image_type == 'backdrop'), None)
+            if backdrop_image and backdrop_image.display_url:
+                return backdrop_image.display_url
+            return self.primary_poster
+
         backdrop_image = self.images.filter(image_type='backdrop').first()
         if backdrop_image and backdrop_image.display_url:
             return backdrop_image.display_url
@@ -225,3 +250,24 @@ class MovieImage(models.Model):
             except Exception:
                 pass
         return None
+
+
+class MovieView(models.Model):
+    """
+    Tracks user viewing history of movies for personalized recommendations.
+    Bounded to keep recent history per user without unbounded growth.
+    """
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='movie_views')
+    movie = models.ForeignKey(Movie, on_delete=models.CASCADE, related_name='views')
+    viewed_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-viewed_at']
+        unique_together = ('user', 'movie')
+        indexes = [
+            models.Index(fields=['user', '-viewed_at'], name='movieview_user_viewed_idx'),
+        ]
+
+    def __str__(self):
+        return f"{self.user.username} viewed {self.movie.title} at {self.viewed_at.strftime('%Y-%m-%d %H:%M')}"
+

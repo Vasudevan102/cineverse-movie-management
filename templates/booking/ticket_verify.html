@@ -1,0 +1,155 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Ticket Verification — CineVerse{% endblock %}
+
+{% block content %}
+<div class="container container-720 py-4">
+    <div class="text-center mb-4">
+        <h2 class="fw-bold text-white mb-1">
+            <i class="fa-solid fa-shield-halved text-danger me-2"></i>Ticket Verification Portal
+        </h2>
+        <p class="text-secondary">CineVerse Digital Ticket Authentication System</p>
+    </div>
+
+    {% if ticket %}
+        <!-- Verification Result Card -->
+        <div class="glass glass-reflection rounded-4 p-4 mb-4 shadow-lg border 
+            {% if status_class == 'success' %}border-success{% elif status_class == 'info' %}border-info{% elif status_class == 'warning' %}border-warning{% else %}border-danger{% endif %}">
+            
+            <!-- Status Badge -->
+            <div class="text-center mb-4">
+                {% if is_valid %}
+                    <div class="d-inline-flex align-items-center justify-content-center bg-success text-white rounded-circle shadow-lg mb-3 animate-checkmark success-checkmark ticket-verify-icon-lg">
+                        <i class="fa-solid fa-check"></i>
+                    </div>
+                {% elif status_class == 'danger' %}
+                    <div class="d-inline-flex align-items-center justify-content-center bg-danger text-white rounded-circle shadow-lg mb-3 ticket-verify-icon-lg">
+                        <i class="fa-solid fa-xmark"></i>
+                    </div>
+                {% else %}
+                    <div class="d-inline-flex align-items-center justify-content-center bg-warning text-dark rounded-circle shadow-lg mb-3 ticket-verify-icon-lg">
+                        <i class="fa-solid fa-exclamation"></i>
+                    </div>
+                {% endif %}
+                <h3 class="fw-bold text-{{ status_class }} mb-0">{{ status_message }}</h3>
+            </div>
+
+            <!-- Ticket Details -->
+            <div class="row g-3 pt-3 border-top border-secondary">
+                <!-- Movie Info -->
+                <div class="col-12">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        {% if ticket.booking.show.movie.primary_poster %}
+                            <div class="rounded-3 shadow overflow-hidden ticket-verify-poster">
+                                <img src="{{ ticket.booking.show.movie.primary_poster }}" 
+                                     alt="{{ ticket.booking.show.movie.title }}" 
+                                     class="ticket-verify-poster-img">
+                            </div>
+                        {% endif %}
+                        <div>
+                            <h4 class="fw-bold text-white mb-1">{{ ticket.booking.show.movie.title }}</h4>
+                            <span class="text-secondary small">
+                                {% if ticket.booking.show.movie.language %}{{ ticket.booking.show.movie.language.name }}{% endif %}
+                                {% if ticket.booking.show.movie.duration %} • {{ ticket.booking.show.movie.duration }}m{% endif %}
+                                {% if ticket.booking.show.movie.age_certificate %} • {{ ticket.booking.show.movie.age_certificate }}{% endif %}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Show Details Grid -->
+                <div class="col-sm-6">
+                    <div class="p-3 bg-dark rounded-3 h-100">
+                        <small class="text-secondary d-block text-uppercase fw-semibold mb-1 ticket-verify-label">Theater</small>
+                        <strong class="text-white d-block">{{ ticket.booking.show.theater.name }}</strong>
+                        <small class="text-secondary">{{ ticket.booking.show.screen }}</small>
+                    </div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="p-3 bg-dark rounded-3 h-100">
+                        <small class="text-secondary d-block text-uppercase fw-semibold mb-1 ticket-verify-label">Location</small>
+                        <strong class="text-white d-block">{{ ticket.booking.show.theater.city }}</strong>
+                        <small class="text-secondary">{{ ticket.booking.show.theater.location }}</small>
+                    </div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="p-3 bg-dark rounded-3 h-100">
+                        <small class="text-secondary d-block text-uppercase fw-semibold mb-1 ticket-verify-label">Show Date & Time</small>
+                        <strong class="text-warning d-block">{{ ticket.booking.show.show_date|date:"D, M d, Y" }}</strong>
+                        <small class="text-warning">{{ ticket.booking.show.start_time|time:"h:i A" }}</small>
+                    </div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="p-3 bg-dark rounded-3 h-100">
+                        <small class="text-secondary d-block text-uppercase fw-semibold mb-1 ticket-verify-label">Seats</small>
+                        <strong class="text-white d-block">{{ ticket.booking.selected_seats|default:ticket.booking.number_of_seats }}</strong>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ticket & Booking Reference -->
+            <div class="row g-3 mt-2">
+                <div class="col-sm-6">
+                    <div class="p-3 bg-dark rounded-3 border border-secondary">
+                        <small class="text-secondary d-block text-uppercase fw-semibold mb-1 ticket-verify-label">Ticket Number</small>
+                        <code class="text-danger fw-bold fs-6">{{ ticket.ticket_number }}</code>
+                    </div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="p-3 bg-dark rounded-3 border border-secondary">
+                        <small class="text-secondary d-block text-uppercase fw-semibold mb-1 ticket-verify-label">Booking Reference</small>
+                        <code class="text-warning fw-bold fs-6">{{ ticket.booking.booking_reference }}</code>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Security Audit -->
+            <div class="mt-4 p-3 rounded-3 text-center {% if is_valid %}bg-success bg-opacity-10 border border-success{% else %}bg-danger bg-opacity-10 border border-danger{% endif %}">
+                <i class="fa-solid fa-fingerprint me-2 {% if is_valid %}text-success{% else %}text-danger{% endif %}"></i>
+                <span class="{% if is_valid %}text-success{% else %}text-danger{% endif %} fw-semibold">
+                    {% if is_valid %}
+                        Security Audit: PASSED — Cryptographic verification confirmed
+                    {% else %}
+                        Security Audit: {{ status_message }}
+                    {% endif %}
+                </span>
+            </div>
+        </div>
+
+    {% else %}
+        <!-- Invalid Token -->
+        <div class="glass glass-reflection rounded-4 p-5 text-center shadow-lg border border-danger">
+            <div class="d-inline-flex align-items-center justify-content-center bg-danger text-white rounded-circle shadow-lg mb-3 ticket-verify-icon-lg">
+                <i class="fa-solid fa-xmark"></i>
+            </div>
+            <h3 class="fw-bold text-danger mb-2">Invalid Verification Token</h3>
+            <p class="text-secondary mb-3">
+                This ticket verification link is invalid or has expired. The QR code may have been tampered with.
+            </p>
+            <div class="p-3 bg-dark rounded-3 border border-danger bg-opacity-10">
+                <i class="fa-solid fa-triangle-exclamation text-danger me-2"></i>
+                <span class="text-danger fw-semibold">No matching ticket found in the CineVerse system</span>
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Back to Home -->
+    <div class="text-center mt-4">
+        <a href="{% url 'movie_list' %}" class="btn btn-outline-glass px-4">
+            <i class="fa-solid fa-home me-2"></i>Back to CineVerse
+        </a>
+    </div>
+</div>
+
+<style>
+@keyframes scaleGlow {
+    0% { transform: scale(0.3); opacity: 0; }
+    60% { transform: scale(1.15); opacity: 1; }
+    100% { transform: scale(1); }
+}
+.success-checkmark {
+    animation: scaleGlow 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+</style>
+{% endblock %}

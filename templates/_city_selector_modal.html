@@ -1,11 +1,11 @@
 <!-- Aurora Glass City Selector Modal -->
 <div class="modal fade modal-glass" id="citySelectorModal" tabindex="-1" aria-labelledby="citySelectorModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content aurora-card border-0" style="background: rgba(13, 19, 38, 0.94); backdrop-filter: blur(30px);">
+        <div class="modal-content aurora-card border-0 modal-aurora-bg">
             <div class="modal-header border-bottom border-secondary pb-3">
                 <div>
                     <h5 class="modal-title fw-bold text-white" id="citySelectorModalLabel">
-                        <i class="fa-solid fa-location-dot me-2" style="color: var(--cyan);"></i>Where are you watching?
+                        <i class="fa-solid fa-location-dot me-2 icon-cyan"></i>Where are you watching?
                     </h5>
                     <p class="text-secondary small mb-0">Select your cinema location to filter available movies, theaters & showtimes.</p>
                 </div>
@@ -16,16 +16,16 @@
                 <!-- Search input inside city modal -->
                 <div class="mb-4">
                     <div class="input-group">
-                        <span class="input-group-text bg-transparent border-end-0 text-secondary" style="border-color: var(--glass-border) !important;">
+                        <span class="input-group-text bg-transparent border-end-0 text-secondary ig-glass-border">
                             <i class="fa-solid fa-magnifying-glass"></i>
                         </span>
-                        <input type="text" id="city-search-input" class="form-control form-control-cineverse border-start-0 ps-0" placeholder="Search city (e.g. Chennai, Coimbatore, Bengaluru)...">
+                        <input type="text" id="city-search-input" class="form-control form-control-cineverse border-start-0 ps-0" placeholder="Search city (e.g. Chennai, Coimbatore, Bengaluru)..." aria-label="Search city" title="Search city">
                     </div>
                 </div>
 
                 <!-- Popular Cities Grid -->
                 <div class="city-section mb-4">
-                    <h6 class="text-white fw-bold mb-3 small text-uppercase" style="letter-spacing: 1px;">
+                    <h6 class="text-white fw-bold mb-3 small text-uppercase ls-wide">
                         <i class="fa-solid fa-fire text-danger me-1"></i>Popular Cities
                     </h6>
                     <div class="row g-2" id="popular-cities-list">
@@ -64,7 +64,7 @@
 
                 <!-- South India Cities Grid -->
                 <div class="city-section mb-4">
-                    <h6 class="text-white fw-bold mb-3 small text-uppercase" style="letter-spacing: 1px;">
+                    <h6 class="text-white fw-bold mb-3 small text-uppercase ls-wide">
                         <i class="fa-solid fa-compass text-info me-1"></i>South India
                     </h6>
                     <div class="row g-2" id="south-cities-list">
@@ -98,7 +98,7 @@
 
                 <!-- Other Major Cities -->
                 <div class="city-section">
-                    <h6 class="text-white fw-bold mb-3 small text-uppercase" style="letter-spacing: 1px;">
+                    <h6 class="text-white fw-bold mb-3 small text-uppercase ls-wide">
                         <i class="fa-solid fa-city text-warning me-1"></i>Other Major Cities
                     </h6>
                     <div class="row g-2" id="other-cities-list">

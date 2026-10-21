@@ -1,15 +1,17 @@
 <div class="movie-card-modern" data-genre="{{ movie.genres.first.slug|default:'action' }}">
     <div class="poster-wrapper">
-        {% if movie.primary_poster %}
-            <img src="{{ movie.primary_poster }}" alt="{{ movie.title }} poster" class="poster-image" loading="lazy">
-        {% else %}
-            <!-- Gradient Poster Fallback -->
-            <div class="poster-fallback d-flex flex-column align-items-center justify-content-center h-100 text-center p-3">
-                <i class="fa-solid fa-clapperboard fs-1 text-purple mb-2" style="color: var(--purple);"></i>
-                <h6 class="fw-bold text-white mb-1 px-2">{{ movie.title }}</h6>
-                <small class="text-secondary small">{{ movie.language.name }}</small>
-            </div>
-        {% endif %}
+        <a href="{% url 'movie_detail' movie.slug %}" class="d-block w-100 h-100 text-decoration-none" aria-label="View {{ movie.title }} details">
+            {% if movie.primary_poster %}
+                <img src="{{ movie.primary_poster }}" alt="{{ movie.title }} poster" class="poster-image" loading="lazy">
+            {% else %}
+                <!-- Gradient Poster Fallback -->
+                <div class="poster-fallback d-flex flex-column align-items-center justify-content-center h-100 text-center p-3">
+                    <i class="fa-solid fa-clapperboard fs-1 text-purple mb-2 icon-purple"></i>
+                    <h6 class="fw-bold text-white mb-1 px-2">{{ movie.title }}</h6>
+                    <small class="text-secondary small">{{ movie.language.name }}</small>
+                </div>
+            {% endif %}
+        </a>
         
         <!-- Certificate Badge -->
         <span class="card-cert-badge bg-dark text-white border border-secondary">{{ movie.age_certificate }}</span>
@@ -26,21 +28,21 @@
         </h6>
 
         <div class="d-flex align-items-center justify-content-between small text-secondary mb-3">
-            <span><i class="fa-solid fa-language me-1" style="color: var(--cyan);"></i>{{ movie.language.name }}</span>
+            <span><i class="fa-solid fa-language me-1 icon-cyan"></i>{{ movie.language.name }}</span>
             <span><i class="fa-regular fa-clock me-1"></i>{{ movie.formatted_duration }}</span>
         </div>
 
         <div class="d-flex flex-wrap gap-1 mb-3">
             {% for genre in movie.genres.all|slice:":2" %}
-                <a href="{% url 'genre_movies' genre.slug %}" class="meta-pill text-white py-0 px-2" style="font-size: 0.72rem;">{{ genre.name }}</a>
+                <a href="{% url 'genre_movies' genre.slug %}" class="meta-pill text-white py-0 px-2 movie-genre-pill">{{ genre.name }}</a>
             {% endfor %}
         </div>
 
         <div class="d-grid gap-2 mt-auto">
-            <a href="{% url 'show_list' %}?movie={{ movie.slug }}" class="btn btn-aurora btn-sm w-100 fw-bold">
+            <a href="{% url 'movie_detail' movie.slug %}" class="btn btn-aurora btn-sm w-100 fw-bold">
                 <i class="fa-solid fa-ticket me-1"></i>Book Tickets
             </a>
-            <a href="{% url 'movie_detail' movie.slug %}" class="btn btn-outline-glass btn-sm w-100 text-center" style="font-size: 0.8rem;">
+            <a href="{% url 'movie_detail' movie.slug %}" class="btn btn-outline-glass btn-sm w-100 text-center movie-card-action-btn">
                 <i class="fa-solid fa-circle-info me-1"></i>Details
             </a>
         </div>

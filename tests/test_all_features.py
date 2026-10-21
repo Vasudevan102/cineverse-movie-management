@@ -1,7 +1,8 @@
-from datetime import date, time
+from datetime import date, time, timedelta
 from django.test import TestCase, Client
 from django.contrib.auth.models import User
 from django.urls import reverse
+from django.utils import timezone
 from movies.models import Movie, Language, Genre, CastMember
 from booking.models import Theater, Show, Booking
 from reviews.models import Review, ReviewReport
@@ -59,7 +60,7 @@ class MovieManagementTestCase(TestCase):
             movie=self.movie1,
             theater=self.theater,
             screen='Screen 1',
-            show_date=date(2026, 8, 20),
+            show_date=timezone.now().date() + timedelta(days=2),
             start_time=time(18, 0),
             end_time=time(20, 30),
             ticket_price=10.00,

@@ -1,10 +1,10 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Checkout & Demo Payment — CineVerse{% endblock %}
+{% block title %}Checkout & Secure Payment — {{ booking.show.movie.title }} | CineVerse{% endblock %}
 
 {% block content %}
-<div class="container" style="max-width: 960px;">
+<div class="container container-payment-max">
     <!-- Back Navigation -->
     <div class="mb-3 d-flex align-items-center justify-content-between flex-wrap gap-2">
         <a href="{% url 'booking_create' booking.show.id %}" class="btn btn-outline-glass btn-sm">
@@ -21,10 +21,10 @@
             <h2 class="fw-bold text-white mb-1">
                 <i class="fa-solid fa-credit-card text-danger me-2"></i>Checkout & Payment
             </h2>
-            <p class="text-secondary mb-0">Select your preferred Indian payment method to confirm your cinema tickets.</p>
+            <p class="text-secondary mb-0">Complete your online cinema ticket purchase via Razorpay Secure Gateway.</p>
         </div>
-        <span class="badge bg-warning text-dark px-3 py-2 fs-6">
-            <i class="fa-solid fa-shield-halved me-1"></i>Demo Payment Gateway Mode
+        <span class="badge {% if demo_mode %}bg-warning text-dark{% else %}bg-success{% endif %} px-3 py-2 fs-6">
+            <i class="fa-solid fa-shield-halved me-1"></i>{% if demo_mode %}Razorpay Test Demo Mode{% else %}Razorpay Test Checkout{% endif %}
         </span>
     </div>
 
@@ -52,15 +52,14 @@
     </div>
     {% endif %}
 
-
     {% if payment_failed %}
-        <div class="alert alert-danger border-danger glass p-4 mb-4 rounded-3 text-center">
+        <div class="alert alert-danger border-danger glass p-4 mb-4 rounded-3 text-center animate-fade-up">
             <i class="fa-solid fa-circle-exclamation fa-3x text-danger mb-3"></i>
             <h4 class="fw-bold text-white mb-2">⚠ Payment Failed</h4>
-            <p class="text-secondary mb-4">Your transaction was not completed. Your seats have not been permanently booked.</p>
+            <p class="text-secondary mb-4">Your transaction was not completed. Your seats remain reserved until the timer expires. You can retry immediately below.</p>
             <div class="d-flex justify-content-center gap-3 flex-wrap">
                 <a href="{% url 'booking_payment' booking.booking_reference %}" class="btn btn-accent px-4 fw-bold">
-                    <i class="fa-solid fa-rotate-right me-2"></i>Try Again
+                    <i class="fa-solid fa-rotate-right me-2"></i>Retry Payment
                 </a>
                 <a href="{% url 'booking_create' booking.show.id %}" class="btn btn-outline-glass px-4">
                     <i class="fa-solid fa-arrow-left me-2"></i>Back to Seat Selection
@@ -70,145 +69,145 @@
     {% endif %}
 
     <div class="row g-4">
-        <!-- Left Column: Payment Methods Tabs -->
+        <!-- Left Column: Payment Methods Tabs & Razorpay Gateway -->
         <div class="col-lg-7">
             <div class="p-4 glass">
-                <h5 class="fw-bold text-white mb-3">
-                    <i class="fa-solid fa-wallet text-danger me-2"></i>Select Payment Method
-                </h5>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold text-white mb-0">
+                        <i class="fa-solid fa-wallet text-danger me-2"></i>Payment Gateway
+                    </h5>
+                    <span class="badge bg-dark border border-secondary text-info">
+                        <i class="fa-solid fa-lock me-1"></i>256-Bit SSL Encrypted
+                    </span>
+                </div>
 
-                <form method="POST" action="{% url 'booking_payment' booking.booking_reference %}" id="payment-gateway-form">
+                <!-- Primary Razorpay Checkout Action Card -->
+                <div class="p-4 mb-4 rounded-3 border border-purple text-center position-relative overflow-hidden payment-card-bg">
+                    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap">
+                        <span class="text-white small fw-bold"><i class="fa-solid fa-bolt text-warning me-1"></i>Secured by Razorpay:</span>
+                        <span class="badge bg-dark border border-secondary text-cyan">Instant Server Verification</span>
+                    </div>
+                    <button type="button" id="rzp-button-pay" class="btn btn-aurora btn-lg w-100 fw-bold py-3 shadow-glow fs-5">
+                        <i class="fa-solid fa-shield-check me-2"></i>Pay ₹{{ grand_total|floatformat:2 }} with Razorpay
+                    </button>
+                    <small class="text-muted d-block mt-2">Supports UPI (GPay, PhonePe, Paytm), RuPay/Visa/MasterCard & 50+ NetBanking Banks</small>
+                </div>
+
+                <!-- Hidden verification form submitted by Razorpay response -->
+                <form id="razorpay-verification-form" method="POST" action="{% url 'payment_verify' %}">
                     {% csrf_token %}
-                    
-                    <!-- Nav Tabs -->
-                    <ul class="nav nav-pills mb-4 gap-2 border-bottom border-secondary pb-3" id="paymentTab" role="tablist">
+                    <input type="hidden" name="razorpay_order_id" id="rzp_order_id" value="{{ razorpay_order_id }}">
+                    <input type="hidden" name="razorpay_payment_id" id="rzp_payment_id" value="">
+                    <input type="hidden" name="razorpay_signature" id="rzp_signature" value="">
+                    <input type="hidden" name="booking_reference" value="{{ booking.booking_reference }}">
+                    <input type="hidden" name="payment_method" id="rzp_payment_method" value="UPI">
+                </form>
+
+                <!-- Payment Methods Channels Supported -->
+                <div class="border-top border-secondary pt-3 mt-4">
+                    <h6 class="text-white fw-bold mb-3 small text-uppercase tracking-wide">
+                        <i class="fa-solid fa-wallet text-cyan me-2"></i>Supported Payment Modes:
+                    </h6>
+
+                    <!-- Nav Tabs (Informational / Selection) -->
+                    <ul class="nav nav-pills mb-3 gap-2 border-bottom border-secondary pb-3" id="paymentTab" role="tablist">
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link active px-3 py-2" id="upi-tab" data-bs-toggle="pill" data-bs-target="#upi" type="button" role="tab" onclick="document.getElementById('selected_method').value='UPI';">
+                            <button class="nav-link active px-3 py-2 small" id="upi-tab" data-bs-toggle="pill" data-bs-target="#upi" type="button" role="tab">
                                 <i class="fa-solid fa-mobile-screen-button me-1"></i>UPI
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link px-3 py-2" id="card-tab" data-bs-toggle="pill" data-bs-target="#card" type="button" role="tab" onclick="document.getElementById('selected_method').value='CARD';">
-                                <i class="fa-solid fa-credit-card me-1"></i>Card
+                            <button class="nav-link px-3 py-2 small" id="card-tab" data-bs-toggle="pill" data-bs-target="#card" type="button" role="tab">
+                                <i class="fa-solid fa-credit-card me-1"></i>Cards
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link px-3 py-2" id="netbanking-tab" data-bs-toggle="pill" data-bs-target="#netbanking" type="button" role="tab" onclick="document.getElementById('selected_method').value='NET_BANKING';">
+                            <button class="nav-link px-3 py-2 small" id="netbanking-tab" data-bs-toggle="pill" data-bs-target="#netbanking" type="button" role="tab">
                                 <i class="fa-solid fa-building-columns me-1"></i>Net Banking
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link px-3 py-2" id="wallet-tab" data-bs-toggle="pill" data-bs-target="#wallet" type="button" role="tab" onclick="document.getElementById('selected_method').value='WALLET';">
-                                <i class="fa-solid fa-wallet me-1"></i>Wallet
+                            <button class="nav-link px-3 py-2 small" id="wallet-tab" data-bs-toggle="pill" data-bs-target="#wallet" type="button" role="tab">
+                                <i class="fa-solid fa-wallet me-1"></i>Wallets
                             </button>
                         </li>
                     </ul>
 
-                    <input type="hidden" name="payment_method" id="selected_method" value="UPI">
-                    <input type="hidden" name="payment_action" id="payment_action_input" value="success">
-
                     <!-- Tab Contents -->
-                    <div class="tab-content" id="paymentTabContent">
+                    <div class="tab-content mb-3" id="paymentTabContent">
                         <!-- UPI Tab -->
                         <div class="tab-pane fade show active" id="upi" role="tabpanel">
-                            <div class="p-3 mb-3 rounded-3 bg-dark border border-secondary">
-                                <h6 class="text-white fw-bold mb-2">Instant UPI Payment</h6>
-                                <p class="text-secondary small mb-3">Pay instantly via any Indian UPI application (GPay, PhonePe, Paytm, BHIM).</p>
-                                
-                                <div class="row g-2 mb-3">
+                            <div class="p-3 rounded-3 bg-dark border border-secondary">
+                                <div class="row g-2">
                                     <div class="col-6 col-sm-3">
                                         <div class="p-2 border rounded text-center text-white bg-dark small">
-                                            <i class="fa-brands fa-google-pay text-danger fs-4 d-block mb-1"></i>Google Pay
+                                            <i class="fa-brands fa-google-pay text-danger fs-5 d-block mb-1"></i>GPay
                                         </div>
                                     </div>
                                     <div class="col-6 col-sm-3">
                                         <div class="p-2 border rounded text-center text-white bg-dark small">
-                                            <i class="fa-solid fa-qrcode text-warning fs-4 d-block mb-1"></i>PhonePe
+                                            <i class="fa-solid fa-qrcode text-warning fs-5 d-block mb-1"></i>PhonePe
                                         </div>
                                     </div>
                                     <div class="col-6 col-sm-3">
                                         <div class="p-2 border rounded text-center text-white bg-dark small">
-                                            <i class="fa-solid fa-wallet text-info fs-4 d-block mb-1"></i>Paytm UPI
+                                            <i class="fa-solid fa-wallet text-info fs-5 d-block mb-1"></i>Paytm
                                         </div>
                                     </div>
                                     <div class="col-6 col-sm-3">
                                         <div class="p-2 border rounded text-center text-white bg-dark small">
-                                            <i class="fa-solid fa-building-columns text-success fs-4 d-block mb-1"></i>BHIM
+                                            <i class="fa-solid fa-building-columns text-success fs-5 d-block mb-1"></i>BHIM
                                         </div>
                                     </div>
-                                </div>
-
-                                <div class="mb-2">
-                                    <label class="form-label text-secondary small">Enter Virtual Payment Address (VPA)</label>
-                                    <input type="text" class="form-control form-control-cineverse" placeholder="username@okaxis or 9876543210@ybl" value="cinephile@upi">
                                 </div>
                             </div>
                         </div>
 
                         <!-- Card Tab -->
                         <div class="tab-pane fade" id="card" role="tabpanel">
-                            <div class="p-3 mb-3 rounded-3 bg-dark border border-secondary">
-                                <div class="alert alert-dark border-warning text-warning small py-2 mb-3">
-                                    <i class="fa-solid fa-triangle-exclamation me-1"></i>Demo Mode — Do NOT enter real credit/debit card numbers.
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label text-secondary small">Cardholder Name</label>
-                                    <input type="text" class="form-control form-control-cineverse" value="{{ user.get_full_name|default:user.username }}">
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label text-secondary small">Card Number</label>
-                                    <input type="text" class="form-control form-control-cineverse" value="4532 •••• •••• 8892">
-                                </div>
-                                <div class="row g-2">
-                                    <div class="col-6">
-                                        <label class="form-label text-secondary small">Expiry Date</label>
-                                        <input type="text" class="form-control form-control-cineverse" value="12/28">
-                                    </div>
-                                    <div class="col-6">
-                                        <label class="form-label text-secondary small">CVV</label>
-                                        <input type="password" class="form-control form-control-cineverse" value="123" maxlength="3">
-                                    </div>
-                                </div>
+                            <div class="p-3 rounded-3 bg-dark border border-secondary text-secondary small">
+                                <i class="fa-solid fa-credit-card text-cyan me-1"></i>All major cards accepted: Visa, MasterCard, RuPay, Maestro, American Express.
                             </div>
                         </div>
 
                         <!-- Net Banking Tab -->
                         <div class="tab-pane fade" id="netbanking" role="tabpanel">
-                            <div class="p-3 mb-3 rounded-3 bg-dark border border-secondary">
-                                <label class="form-label text-secondary small">Select Your Bank</label>
-                                <select class="form-select form-select-cineverse mb-3">
-                                    <option selected>State Bank of India (SBI)</option>
-                                    <option>HDFC Bank</option>
-                                    <option>ICICI Bank</option>
-                                    <option>Axis Bank</option>
-                                    <option>Kotak Mahindra Bank</option>
-                                </select>
+                            <div class="p-3 rounded-3 bg-dark border border-secondary text-secondary small">
+                                <i class="fa-solid fa-building-columns text-warning me-1"></i>Over 50+ Indian banks supported including SBI, HDFC, ICICI, Axis, Kotak.
                             </div>
                         </div>
 
                         <!-- Wallet Tab -->
                         <div class="tab-pane fade" id="wallet" role="tabpanel">
-                            <div class="p-3 mb-3 rounded-3 bg-dark border border-secondary">
-                                <label class="form-label text-secondary small">Select Digital Wallet</label>
-                                <select class="form-select form-select-cineverse mb-3">
-                                    <option selected>Paytm Wallet</option>
-                                    <option>Amazon Pay</option>
-                                    <option>Mobikwik</option>
-                                </select>
+                            <div class="p-3 rounded-3 bg-dark border border-secondary text-secondary small">
+                                <i class="fa-solid fa-wallet text-info me-1"></i>Popular wallets supported: Paytm, Amazon Pay, PhonePe, Mobikwik, Freecharge.
                             </div>
                         </div>
                     </div>
 
-                    <div class="d-flex flex-column gap-2 mt-4">
-                        <button type="submit" onclick="document.getElementById('payment_action_input').value='success';" class="btn btn-accent btn-lg w-100 fw-bold py-3 shadow-glow">
-                            <i class="fa-solid fa-lock me-2"></i>Pay ₹{{ grand_total|floatformat:2 }} & Confirm Booking
-                        </button>
-                        
-                        <button type="submit" onclick="document.getElementById('payment_action_input').value='fail';" class="btn btn-outline-danger btn-sm w-100 py-2 text-decoration-none">
-                            <i class="fa-solid fa-bug me-1"></i>Simulate Payment Failure (Demo Test)
-                        </button>
+                    {% if demo_mode %}
+                    <!-- Demo Fallback Controls (Only enabled when RAZORPAY_DEMO_MODE=True) -->
+                    <div class="border-top border-secondary pt-3 mt-3">
+                        <div class="alert alert-warning py-2 px-3 small d-flex align-items-center gap-2 mb-2">
+                            <i class="fa-solid fa-triangle-exclamation text-warning"></i>
+                            <span>RAZORPAY_DEMO_MODE is currently enabled.</span>
+                        </div>
+                        <form method="POST" action="{% url 'booking_payment' booking.booking_reference %}" id="demo-fallback-form">
+                            {% csrf_token %}
+                            <input type="hidden" name="payment_action" id="demo_action_input" value="success">
+                            <input type="hidden" name="payment_method" value="UPI">
+                            <div class="d-flex gap-2">
+                                <button type="submit" onclick="document.getElementById('demo_action_input').value='success';" class="btn btn-outline-glass btn-sm w-50">
+                                    <i class="fa-solid fa-check text-success me-1"></i>Demo Confirm
+                                </button>
+                                <button type="submit" onclick="document.getElementById('demo_action_input').value='fail';" class="btn btn-outline-danger btn-sm w-50">
+                                    <i class="fa-solid fa-ban me-1"></i>Demo Fail
+                                </button>
+                            </div>
+                        </form>
                     </div>
-                </form>
+                    {% endif %}
+                </div>
             </div>
         </div>
 
@@ -220,7 +219,7 @@
                 </h5>
 
                 <div class="d-flex gap-3 mb-4 pb-3 border-bottom border-secondary">
-                    <div class="poster-wrapper rounded-3 shadow" style="width: 70px; height: 100px;">
+                    <div class="poster-wrapper rounded-3 shadow poster-thumb-size">
                         {% if booking.show.movie.primary_poster %}
                             <img src="{{ booking.show.movie.primary_poster }}" alt="{{ booking.show.movie.title }}" class="poster-image">
                         {% else %}
@@ -263,6 +262,17 @@
                     </div>
                 </div>
 
+                <div class="p-3 mb-3 rounded-3 bg-dark border border-secondary small text-secondary">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Booking ID:</span>
+                        <code class="text-warning">{{ booking.booking_reference }}</code>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Order Reference:</span>
+                        <code class="text-info">{{ razorpay_order_id }}</code>
+                    </div>
+                </div>
+
                 <div class="mt-4 pt-3 border-top border-secondary">
                     <a href="{% url 'booking_create' booking.show.id %}" class="btn btn-outline-glass btn-sm w-100 text-center">
                         <i class="fa-solid fa-pen-to-square me-2"></i>Change Seats / Back to Selection
@@ -272,4 +282,142 @@
         </div>
     </div>
 </div>
+
+<!-- Configuration Element for Razorpay JS -->
+<div id="payment-gateway-config" 
+     class="d-none"
+     data-demo-mode="{% if demo_mode %}true{% else %}false{% endif %}"
+     data-key-id="{{ razorpay_key_id }}"
+     data-order-id="{{ razorpay_order_id }}"
+     data-amount-paise="{{ amount_in_paise }}"
+     data-test-payment-id="{{ test_payment_id }}"
+     data-test-signature="{{ test_signature }}"
+     data-movie-title="{{ booking.show.movie.title }}"
+     data-user-name="{{ user.get_full_name|default:user.username }}"
+     data-user-email="{{ user.email|default:'customer@cineverse.com' }}"
+     data-cancel-url="{% url 'payment_cancel' booking.booking_reference %}"
+     data-failure-url="{% url 'booking_payment' booking.booking_reference %}">
+</div>
+
+<!-- Razorpay Checkout Script Integration -->
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var payBtn = document.getElementById('rzp-button-pay');
+    if (!payBtn) return;
+
+    var cfgEl = document.getElementById('payment-gateway-config');
+    var isDemoMode = cfgEl ? (cfgEl.getAttribute('data-demo-mode') === 'true') : false;
+    var keyId = cfgEl ? cfgEl.getAttribute('data-key-id') : '';
+    var orderId = cfgEl ? cfgEl.getAttribute('data-order-id') : '';
+    var amountInPaise = cfgEl ? cfgEl.getAttribute('data-amount-paise') : '';
+    var movieTitle = cfgEl ? cfgEl.getAttribute('data-movie-title') : '';
+    var userName = cfgEl ? cfgEl.getAttribute('data-user-name') : '';
+    var userEmail = cfgEl ? cfgEl.getAttribute('data-user-email') : '';
+    var cancelUrl = cfgEl ? cfgEl.getAttribute('data-cancel-url') : '';
+    var failureRedirectUrl = cfgEl ? cfgEl.getAttribute('data-failure-url') : '';
+
+    payBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+
+        // When in demo fallback mode
+        if (isDemoMode) {
+            var demoForm = document.getElementById('demo-fallback-form');
+            if (demoForm) {
+                demoForm.submit();
+                return;
+            }
+        }
+
+        // -----------------------------------------------------------------------
+        // FIX: Track whether the Razorpay success handler has fired.
+        // Razorpay fires `handler` on payment success, then closes the modal,
+        // which triggers `ondismiss`. Without this flag, `ondismiss` would
+        // redirect to the cancel URL, aborting the verification form submission.
+        // -----------------------------------------------------------------------
+        var _paymentHandled = false;
+
+        // Official Razorpay Checkout Flow
+        var options = {
+            "key": keyId,
+            "amount": amountInPaise,
+            "currency": "INR",
+            "name": "CineVerse Entertainment",
+            "description": "Cinema Ticket Booking for " + movieTitle,
+            "order_id": orderId,
+            "handler": function (response) {
+                // Mark payment as handled BEFORE form submit so ondismiss skips cancel redirect
+                _paymentHandled = true;
+
+                // Disable button to prevent double-submit
+                payBtn.disabled = true;
+                payBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i>Verifying Payment…';
+
+                // Post payment credentials to server-side cryptographic verification endpoint
+                document.getElementById('rzp_order_id').value = response.razorpay_order_id || orderId;
+                document.getElementById('rzp_payment_id').value = response.razorpay_payment_id;
+                document.getElementById('rzp_signature').value = response.razorpay_signature;
+
+                // Detect payment method from Razorpay response if available
+                if (response.razorpay_payment_id) {
+                    var methodEl = document.getElementById('rzp_payment_method');
+                    // Razorpay does not return method in handler; keep the tab-selected value
+                    var activeTab = document.querySelector('#paymentTab .nav-link.active');
+                    if (activeTab) {
+                        var tabId = activeTab.getAttribute('data-bs-target') || '';
+                        if (tabId.includes('card')) methodEl.value = 'CARD';
+                        else if (tabId.includes('netbanking')) methodEl.value = 'NET_BANKING';
+                        else if (tabId.includes('wallet')) methodEl.value = 'WALLET';
+                        else methodEl.value = 'UPI';
+                    }
+                }
+
+                document.getElementById('razorpay-verification-form').submit();
+            },
+            "prefill": {
+                "name": userName,
+                "email": userEmail,
+                "contact": "9876543210"
+            },
+            "theme": {
+                "color": "#7c3aed"
+            },
+            "modal": {
+                "ondismiss": function() {
+                    // KEY FIX: Only redirect to cancel if payment was NOT already handled.
+                    // When Razorpay calls handler (success), it then closes the modal,
+                    // firing ondismiss. Without this guard, ondismiss would navigate away
+                    // before the verification form submission completes.
+                    if (_paymentHandled) {
+                        console.log("Razorpay modal closed after successful payment — verification in progress.");
+                        return;  // Do NOT redirect — let form submission proceed
+                    }
+                    console.log("Razorpay Checkout dismissed by user without completing payment.");
+                    if (cancelUrl) {
+                        window.location.href = cancelUrl;
+                    }
+                }
+            }
+        };
+
+        try {
+            if (typeof Razorpay !== 'undefined') {
+                var rzp = new Razorpay(options);
+                rzp.on('payment.failed', function (response) {
+                    console.error("Razorpay Payment Error:", response.error);
+                    _paymentHandled = false;  // Ensure cancel redirect is allowed for failures
+                    window.location.href = failureRedirectUrl;
+                });
+                rzp.open();
+            } else {
+                console.warn("Razorpay script not loaded.");
+                window.location.href = failureRedirectUrl;
+            }
+        } catch (err) {
+            console.error("Razorpay Checkout execution error:", err);
+            window.location.href = failureRedirectUrl;
+        }
+    });
+});
+</script>
 {% endblock %}

@@ -1,0 +1,37 @@
+{% comment %}
+Reusable pagination include.
+Usage: {% include '_pagination.html' with page_obj=page_obj aria_label="..." preserve_params=True %}
+- aria_label    : (optional) accessible label for the <nav>, defaults to "Pagination"
+- preserve_params: (optional) set to True to carry forward non-page GET params (e.g. filters)
+{% endcomment %}
+{% if page_obj.has_other_pages %}
+<nav class="d-flex justify-content-center my-4" aria-label="{{ aria_label|default:'Pagination' }}">
+    <div class="pagination pagination-dark mb-0" role="list">
+        <div class="page-item{% if not page_obj.has_previous %} disabled{% endif %}" role="listitem">
+            {% if page_obj.has_previous %}
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if preserve_params %}{% for key, value in request.GET.items %}{% if key != 'page' %}&amp;{{ key }}={{ value }}{% endif %}{% endfor %}{% endif %}" aria-label="Previous page">&laquo; Previous</a>
+            {% else %}
+                <span class="page-link" aria-disabled="true">&laquo; Previous</span>
+            {% endif %}
+        </div>
+        {% for page in page_obj.paginator.page_range %}
+            {% if page_obj.number == page %}
+                <div class="page-item active" aria-current="page" role="listitem">
+                    <span class="page-link">{{ page }}</span>
+                </div>
+            {% elif page > page_obj.number|add:"-3" and page < page_obj.number|add:"3" %}
+                <div class="page-item" role="listitem">
+                    <a class="page-link" href="?page={{ page }}{% if preserve_params %}{% for key, value in request.GET.items %}{% if key != 'page' %}&amp;{{ key }}={{ value }}{% endif %}{% endfor %}{% endif %}">{{ page }}</a>
+                </div>
+            {% endif %}
+        {% endfor %}
+        <div class="page-item{% if not page_obj.has_next %} disabled{% endif %}" role="listitem">
+            {% if page_obj.has_next %}
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if preserve_params %}{% for key, value in request.GET.items %}{% if key != 'page' %}&amp;{{ key }}={{ value }}{% endif %}{% endfor %}{% endif %}" aria-label="Next page">Next &raquo;</a>
+            {% else %}
+                <span class="page-link" aria-disabled="true">Next &raquo;</span>
+            {% endif %}
+        </div>
+    </div>
+</nav>
+{% endif %}

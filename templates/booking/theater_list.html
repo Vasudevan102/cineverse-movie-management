@@ -21,7 +21,7 @@
     </div>
 
     <!-- City Selector Pills -->
-    <div class="mb-4 d-flex align-items-center gap-2 overflow-auto py-2" style="white-space: nowrap; -webkit-overflow-scrolling: touch;">
+    <div class="mb-4 d-flex align-items-center gap-2 overflow-auto py-2 theater-city-scroll">
         <span class="text-secondary small fw-bold text-uppercase me-1"><i class="fa-solid fa-filter me-1"></i>City:</span>
         <a href="{% url 'theater_list' %}" class="genre-pill {% if not selected_city %}bg-danger text-white border-danger{% endif %} px-3 py-2 fs-6">All Cities</a>
         {% for c in cities %}
@@ -37,7 +37,7 @@
             {% endif %}
             <div class="col-md-9">
                 <div class="input-group">
-                    <span class="input-group-text bg-transparent border-end-0 text-secondary" style="border-color: var(--glass-border) !important;">
+                    <span class="input-group-text bg-transparent border-end-0 text-secondary ig-glass-border">
                         <i class="fa-solid fa-magnifying-glass"></i>
                     </span>
                     <input type="text" name="q" value="{{ search_q|default:'' }}" class="form-control form-control-cineverse border-start-0 ps-0" placeholder="Search theater name, location, address, Dolby Atmos...">

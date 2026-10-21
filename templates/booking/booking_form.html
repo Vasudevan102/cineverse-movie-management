@@ -4,7 +4,7 @@
 {% block title %}Select Seats — {{ show.movie.title }} | CineVerse{% endblock %}
 
 {% block content %}
-<div class="container" style="max-width: 960px;">
+<div class="container container-960">
     <!-- Back Navigation -->
     <div class="mb-3 d-flex align-items-center justify-content-between flex-wrap gap-2">
         <a href="{% url 'show_list' %}?movie={{ show.movie.slug }}&city={{ show.theater.city }}" class="btn btn-outline-glass btn-sm">
@@ -85,8 +85,8 @@
                             {{ show.occupancy_status }}
                         </span>
                     </div>
-                    <div class="progress mb-2" style="height: 8px; background: rgba(255,255,255,0.08);">
-                        <div class="progress-bar {% if show.occupancy_percent >= 90 %}bg-danger{% elif show.occupancy_percent >= 70 %}bg-warning{% else %}bg-success{% endif %}" id="occupancy-progress-bar" role="progressbar" data-width="{{ show.occupancy_percent }}%" aria-valuenow="{{ show.occupancy_percent }}" aria-valuemin="0" aria-valuemax="100"></div>
+                    <div class="progress mb-2 progress-thin">
+                        <div class="progress-bar {% if show.occupancy_percent >= 90 %}bg-danger{% elif show.occupancy_percent >= 70 %}bg-warning{% else %}bg-success{% endif %}" id="occupancy-progress-bar" role="progressbar" title="Show Occupancy" aria-label="Show Occupancy" data-width="{{ show.occupancy_percent }}%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
                     </div>
                     <div class="d-flex justify-content-between align-items-center small text-secondary">
                         <span>👥 <span id="booked-seats-display">{{ show.booked_seats_count }}</span> viewers booked for this show</span>
@@ -112,7 +112,7 @@
         <!-- Cinema Screen Bar -->
         <div class="cinema-screen-container">
             <div class="cinema-screen-bar"></div>
-            <span class="text-uppercase small text-secondary fw-bold" style="letter-spacing: 2px;">SCREEN THIS WAY</span>
+            <span class="text-uppercase small text-secondary fw-bold screen-direction-label">SCREEN THIS WAY</span>
         </div>
 
         <!-- Accessible 5-State Legend -->
@@ -149,42 +149,42 @@
             <!-- Row A to D (Standard) -->
             {% for row in "ABCD" %}
                 <div class="d-flex align-items-center justify-content-center gap-2 mb-2">
-                    <span class="text-muted fw-bold small me-2" style="width: 20px;">{{ row }}</span>
+                    <span class="text-muted fw-bold small me-2 seat-label-badge">{{ row }}</span>
                     {% for num in "12345678" %}
                         <button type="button" 
                                 class="seat-btn seat-icon seat-available" 
                                 data-seat-id="{{ row }}{{ num }}" 
-                                data-row="{{ row }}"
-                                data-num="{{ num }}"
-                                data-type="standard"
-                                data-price="{{ show.ticket_price }}"
+                                data-row="{{ row }}" 
+                                data-num="{{ num }}" 
+                                data-type="standard" 
+                                data-price="{{ show.ticket_price }}" 
                                 title="Seat {{ row }}{{ num }} (Standard)">
                             {{ num }}
                         </button>
                     {% endfor %}
-                    <span class="text-muted fw-bold small ms-2" style="width: 20px;">{{ row }}</span>
+                    <span class="text-muted fw-bold small ms-2 seat-label-badge">{{ row }}</span>
                 </div>
             {% endfor %}
 
-            <div class="my-3 border-top border-secondary opacity-25" style="max-width: 480px; margin: 0 auto;"></div>
+            <div class="my-3 border-top border-secondary opacity-25 seat-divider-line"></div>
 
             <!-- Row E & F (Premium) -->
             {% for row in "EF" %}
                 <div class="d-flex align-items-center justify-content-center gap-2 mb-2">
-                    <span class="text-warning fw-bold small me-2" style="width: 20px;">{{ row }}</span>
+                    <span class="text-warning fw-bold small me-2 seat-label-badge">{{ row }}</span>
                     {% for num in "12345678" %}
                         <button type="button" 
                                 class="seat-btn seat-icon seat-available border-warning" 
                                 data-seat-id="{{ row }}{{ num }}" 
-                                data-row="{{ row }}"
-                                data-num="{{ num }}"
-                                data-type="premium"
-                                data-price="{{ show.ticket_price }}"
+                                data-row="{{ row }}" 
+                                data-num="{{ num }}" 
+                                data-type="premium" 
+                                data-price="{{ show.ticket_price }}" 
                                 title="Seat {{ row }}{{ num }} (Premium)">
                             {{ num }}
                         </button>
                     {% endfor %}
-                    <span class="text-warning fw-bold small ms-2" style="width: 20px;">{{ row }}</span>
+                    <span class="text-warning fw-bold small ms-2 seat-label-badge">{{ row }}</span>
                 </div>
             {% endfor %}
         </div>

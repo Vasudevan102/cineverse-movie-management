@@ -2,13 +2,13 @@
 {% block title %}Delete Review - CineVerse{% endblock %}
 
 {% block content %}
-<div class="container" style="max-width: 580px;">
-    <div class="card p-4 rounded-3 text-center shadow-lg" style="background-color: var(--bg-card); border: 1px solid var(--border-color);">
+<div class="container container-580">
+    <div class="card p-4 rounded-3 text-center shadow-lg panel-glass">
         <i class="fa-solid fa-trash-can fa-3x text-danger mb-3"></i>
         <h3 class="fw-bold text-white mb-2">Delete Review?</h3>
         <p class="text-secondary">Are you sure you want to delete your review for <strong>{{ review.movie.title }}</strong>?</p>
 
-        <div class="p-3 text-start text-white mb-4 rounded-3" style="background-color: var(--bg-secondary); border: 1px solid var(--border-color);">
+        <div class="p-3 text-start text-white mb-4 rounded-3 panel-surface">
             <div class="text-warning fw-bold mb-1">{{ review.rating }} Stars ★</div>
             <p class="small text-secondary mb-0">{{ review.comment }}</p>
         </div>

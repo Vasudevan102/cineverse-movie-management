@@ -48,7 +48,7 @@
                         <input type="hidden" name="status" value="{{ selected_status }}">
                     {% endif %}
                     <div class="input-group">
-                        <span class="input-group-text bg-transparent border-end-0 text-secondary" style="border-color: var(--glass-border) !important;">
+                        <span class="input-group-text bg-transparent border-end-0 text-secondary ig-glass-border">
                             <i class="fa-solid fa-magnifying-glass"></i>
                         </span>
                         <input type="text" name="q" value="{{ search_q|default:'' }}" 
@@ -151,6 +151,8 @@
                         <div class="d-flex flex-wrap gap-1 mb-3 justify-content-md-end">
                             {% if booking.status == 'CONFIRMED' %}
                                 <span class="badge bg-success px-2.5 py-1.5"><i class="fa-solid fa-circle-check me-1"></i>Confirmed</span>
+                            {% elif booking.status == 'PENDING_PAYMENT' %}
+                                <span class="badge bg-warning text-dark px-2.5 py-1.5"><i class="fa-solid fa-clock me-1"></i>Pending Payment</span>
                             {% elif booking.status == 'CANCELLED' %}
                                 <span class="badge bg-danger px-2.5 py-1.5"><i class="fa-solid fa-circle-xmark me-1"></i>Cancelled</span>
                             {% elif booking.status == 'COMPLETED' %}
@@ -159,6 +161,10 @@
 
                             {% if booking.payment_status == 'PAID' %}
                                 <span class="badge bg-outline-success text-success border border-success px-2.5 py-1.5"><i class="fa-solid fa-check me-1"></i>Paid</span>
+                            {% elif booking.payment_status == 'FAILED' %}
+                                <span class="badge bg-outline-danger text-danger border border-danger px-2.5 py-1.5"><i class="fa-solid fa-triangle-exclamation me-1"></i>Failed</span>
+                            {% elif booking.payment_status == 'PENDING' %}
+                                <span class="badge bg-outline-warning text-warning border border-warning px-2.5 py-1.5"><i class="fa-solid fa-hourglass-half me-1"></i>Pending</span>
                             {% elif booking.payment_status == 'REFUNDED' %}
                                 <span class="badge bg-outline-info text-info border border-info px-2.5 py-1.5"><i class="fa-solid fa-rotate-left me-1"></i>Refunded</span>
                             {% endif %}
@@ -170,17 +176,26 @@
 
                         <!-- Price -->
                         <div class="mb-3">
-                            <small class="text-secondary d-block text-uppercase fw-semibold" style="letter-spacing: 0.5px;">
-                                {% if booking.status == 'CANCELLED' %}TOTAL{% else %}TOTAL PAID{% endif %}
+                            <small class="text-secondary d-block text-uppercase fw-semibold booking-label-ls">
+                                {% if booking.status == 'CANCELLED' %}TOTAL{% elif booking.payment_status == 'PAID' %}TOTAL PAID{% else %}AMOUNT DUE{% endif %}
                             </small>
                             <span class="fs-3 fw-bold text-success">₹{{ booking.total_amount|floatformat:0 }}</span>
                         </div>
 
                         <!-- Action Buttons -->
                         <div class="d-flex flex-wrap gap-2 w-100 justify-content-md-end">
-                            <a href="{% url 'booking_detail' booking.booking_reference %}" class="btn btn-accent btn-sm px-3 py-2 fw-bold flex-grow-1 flex-md-grow-0 shadow-sm">
-                                <i class="fa-solid fa-ticket me-1"></i>View Ticket
-                            </a>
+                            {% if booking.payment_status == 'PAID' %}
+                                <a href="{% url 'booking_detail' booking.booking_reference %}" class="btn btn-accent btn-sm px-3 py-2 fw-bold flex-grow-1 flex-md-grow-0 shadow-sm">
+                                    <i class="fa-solid fa-ticket me-1"></i>View Ticket
+                                </a>
+                                <a href="{% url 'booking_ticket_download' booking.booking_reference %}" class="btn btn-outline-glass btn-sm px-3 py-2 fw-bold flex-grow-1 flex-md-grow-0 shadow-sm" title="Download PDF Ticket">
+                                    <i class="fa-solid fa-file-pdf me-1 text-danger"></i>PDF Ticket
+                                </a>
+                            {% elif not booking.show.is_past %}
+                                <a href="{% url 'booking_payment' booking.booking_reference %}" class="btn btn-warning btn-sm px-3 py-2 fw-bold flex-grow-1 flex-md-grow-0 shadow-sm text-dark">
+                                    <i class="fa-solid fa-credit-card me-1"></i>Complete Payment
+                                </a>
+                            {% endif %}
                             {% if booking.status == 'CONFIRMED' and not booking.show.is_past %}
                                 <a href="{% url 'booking_cancel' booking.booking_reference %}" class="btn btn-outline-glass btn-sm text-danger py-2 flex-grow-1 flex-md-grow-0">
                                     Cancel
@@ -193,7 +208,7 @@
         {% empty %}
             <!-- Friendly Filter-Specific Empty State -->
             <div class="glass p-5 rounded-4 text-center my-4 animate-fade-up">
-                <div class="d-inline-flex align-items-center justify-content-center bg-dark text-warning rounded-circle shadow-lg mb-3" style="width: 70px; height: 70px; font-size: 2rem; border: 1px solid var(--glass-border);">
+                <div class="d-inline-flex align-items-center justify-content-center bg-dark text-warning rounded-circle shadow-lg mb-3 bookings-empty-icon">
                     🎟
                 </div>
                 {% if selected_status == 'upcoming' %}
@@ -225,7 +240,7 @@
 </div>
 
 <!-- Copy Toast Notification -->
-<div id="booking-toast" class="toast align-items-center text-white bg-dark border border-danger position-fixed bottom-0 end-0 m-3 p-2 rounded-3 shadow-lg" style="z-index: 1100; display: none; min-width: 250px;">
+<div id="booking-toast" class="toast align-items-center text-white bg-dark border border-danger position-fixed bottom-0 end-0 m-3 p-2 rounded-3 shadow-lg booking-toast">
     <div class="d-flex align-items-center">
         <div class="toast-body">
             <i class="fa-solid fa-circle-check text-success me-2"></i><span id="toast-message">Booking ID copied</span>

@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Language, Genre, CastMember, Movie, MovieImage
+from .models import Language, Genre, CastMember, Movie, MovieImage, MovieView
 
 class MovieImageInline(admin.TabularInline):
     model = MovieImage
@@ -53,3 +53,10 @@ class MovieImageAdmin(admin.ModelAdmin):
     list_display = ('movie', 'image_type', 'caption', 'is_primary', 'uploaded_at')
     list_filter = ('image_type', 'is_primary', 'uploaded_at')
     search_fields = ('movie__title', 'caption')
+
+@admin.register(MovieView)
+class MovieViewAdmin(admin.ModelAdmin):
+    list_display = ('user', 'movie', 'viewed_at')
+    list_filter = ('viewed_at',)
+    search_fields = ('user__username', 'movie__title')
+    readonly_fields = ('viewed_at',)

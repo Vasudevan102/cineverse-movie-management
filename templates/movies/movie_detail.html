@@ -26,7 +26,7 @@
             <!-- Right: Details -->
             <div class="col-md-8 col-lg-9 d-flex flex-column">
                 <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
-                    <h1 class="fw-bold text-white mb-0" style="font-size: clamp(1.8rem, 4.5vw, 3.2rem);">{{ movie.title }}</h1>
+                    <h1 class="fw-bold text-white mb-0 hero-title-responsive">{{ movie.title }}</h1>
                     <div class="d-flex align-items-center gap-2">
                         <span class="fs-4 text-warning fw-bold"><i class="fa-solid fa-star me-1"></i>{{ movie.average_rating }}</span>
                         <span class="text-secondary small">/ 5 ({{ movie.total_reviews }} review{{ movie.total_reviews|pluralize }})</span>
@@ -48,7 +48,7 @@
                 </div>
 
                 <h5 class="text-white fw-bold mb-2">Storyline</h5>
-                <p class="text-secondary fs-6 mb-4" style="line-height: 1.75;">{{ movie.description }}</p>
+                <p class="text-secondary fs-6 mb-4 text-lh-175">{{ movie.description }}</p>
 
                 <!-- Action Buttons -->
                 <div class="mt-auto d-flex gap-3 flex-wrap align-items-center">
@@ -61,7 +61,7 @@
                         </a>
                     {% endif %}
                     {% if review_status.can_review %}
-                        <a href="{% url 'review_create' movie.id %}" class="btn btn-outline-glass btn-lg px-4" style="border-color: var(--accent-gold); color: var(--accent-gold);">
+                        <a href="{% url 'review_create' movie.id %}" class="btn btn-outline-glass btn-lg px-4 btn-outline-gold">
                             <i class="fa-solid fa-pen-to-square me-2"></i>Write Review
                         </a>
                     {% endif %}
@@ -97,8 +97,8 @@
         <div class="row row-cols-2 row-cols-md-4 row-cols-lg-6 g-3">
             {% for img in movie.images.all %}
                 <div class="col">
-                    <div class="overflow-hidden h-100" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
-                        <img src="{{ img.display_url }}" alt="{{ img.caption|default:movie.title }}" class="img-fluid" style="border-radius: var(--radius-md); width: 100%; object-fit: cover;" loading="lazy">
+                    <div class="overflow-hidden h-100 panel-glass-md">
+                        <img src="{{ img.display_url }}" alt="{{ img.caption|default:movie.title }}" class="img-fluid gallery-img" loading="lazy">
                         {% if img.caption %}
                             <div class="p-2 small text-muted text-center text-truncate">{{ img.caption }}</div>
                         {% endif %}
@@ -118,16 +118,16 @@
         <div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-6 g-3">
             {% for member in movie.cast.all %}
                 <div class="col">
-                    <div class="text-center p-3 h-100" style="background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); transition: transform var(--transition-base), box-shadow var(--transition-base);">
+                    <div class="text-center p-3 h-100 panel-glass-md cast-card-hover">
                         {% if member.display_photo %}
-                            <img src="{{ member.display_photo }}" alt="{{ member.name }}" class="rounded-circle mx-auto mb-2" style="width: 80px; height: 80px; object-fit: cover; border: 2px solid var(--accent);">
+                            <img src="{{ member.display_photo }}" alt="{{ member.name }}" class="rounded-circle mx-auto mb-2 cast-photo">
                         {% else %}
-                            <div class="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-2 text-light fs-3" style="width: 80px; height: 80px; background: var(--bg-secondary); border: 2px solid var(--border-color);">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-2 text-light fs-3 cast-avatar">
                                 <i class="fa-solid fa-user"></i>
                             </div>
                         {% endif %}
-                        <h6 class="text-white fw-bold mb-1 text-truncate" style="font-size: 0.88rem;">{{ member.name }}</h6>
-                        <small class="text-muted text-truncate d-block" style="font-size: 0.78rem;">{{ member.character_name }}</small>
+                        <h6 class="text-white fw-bold mb-1 text-truncate cast-name">{{ member.name }}</h6>
+                        <small class="text-muted text-truncate d-block cast-role">{{ member.character_name }}</small>
                     </div>
                 </div>
             {% endfor %}
@@ -162,12 +162,12 @@
                                     {{ show.occupancy_status }}
                                 </span>
                             </div>
-                            <div class="progress" style="height: 5px; background: rgba(255,255,255,0.08);">
+                            <div class="progress progress-nano">
                                 <div class="progress-bar {% if show.occupancy_percent >= 90 %}bg-danger{% elif show.occupancy_percent >= 70 %}bg-warning{% else %}bg-success{% endif %}" data-width="{{ show.occupancy_percent }}%"></div>
                             </div>
                         </div>
 
-                        <div class="d-flex justify-content-between align-items-center mt-3 pt-2" style="border-top: 1px solid var(--border-color);">
+                        <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top-token">
                             <div>
                                 <span class="text-white fw-semibold small"><i class="fa-regular fa-clock me-1 text-warning"></i>{{ show.show_date|date:"D, M d" }} at {{ show.start_time|time:"h:i A" }}</span>
                                 <div class="small text-muted">{{ show.available_seats }} seats left</div>
@@ -197,14 +197,14 @@
                     <i class="fa-solid fa-star me-1"></i>Write Review
                 </a>
             {% elif review_status.existing_review %}
-                <a href="{% url 'review_edit' review_status.existing_review.id %}" class="btn btn-outline-glass" style="border-color: var(--accent-gold); color: var(--accent-gold);">
+                <a href="{% url 'review_edit' review_status.existing_review.id %}" class="btn btn-outline-glass btn-outline-gold">
                     <i class="fa-solid fa-pen me-1"></i>Edit Your Review
                 </a>
             {% endif %}
         </div>
 
         <!-- Rating Breakdown Card -->
-        <div class="p-4 mb-4" style="background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg);">
+        <div class="p-4 mb-4 panel-glass">
             <div class="row align-items-center g-4">
                 <div class="col-md-4 text-center border-end-md">
                     <div class="display-3 fw-bold text-white mb-1">{{ movie.average_rating }}</div>
@@ -216,7 +216,7 @@
                             {% elif forloop.counter|add:"-1" < avg %}
                                 <i class="fa-solid fa-star-half-stroke"></i>
                             {% else %}
-                                <i class="fa-regular fa-star" style="opacity:0.3;"></i>
+                                <i class="fa-regular fa-star star-faded"></i>
                             {% endif %}
                         {% endfor %}
                         {% endwith %}
@@ -228,11 +228,11 @@
                     <h6 class="text-white fw-bold mb-3">Rating Breakdown</h6>
                     {% for item in movie.rating_breakdown %}
                         <div class="rating-bar-container">
-                            <span class="small text-secondary fw-semibold" style="width: 45px;">{{ item.star }} <i class="fa-solid fa-star text-warning" style="font-size:0.65rem;"></i></span>
+                            <span class="small text-secondary fw-semibold rating-bar-label">{{ item.star }} <i class="fa-solid fa-star text-warning rating-bar-count-sm"></i></span>
                             <div class="rating-bar-bg">
                                 <div class="rating-bar-fill" data-width="{{ item.percent }}%"></div>
                             </div>
-                            <span class="small text-secondary" style="width: 36px; text-align: right;">{{ item.count }}</span>
+                            <span class="small text-secondary rating-bar-count">{{ item.count }}</span>
                         </div>
                     {% endfor %}
                 </div>
@@ -240,7 +240,7 @@
         </div>
 
         {% if not review_status.can_review and not review_status.existing_review %}
-            <div class="d-flex align-items-center p-3 mb-4" style="background: rgba(255,193,7,0.06); border: 1px solid rgba(255,193,7,0.15); border-radius: var(--radius-md);">
+            <div class="d-flex align-items-center p-3 mb-4 review-warning-banner">
                 <i class="fa-solid fa-shield-cat fa-2x text-warning me-3"></i>
                 <div>
                     <strong class="text-white">Verified Viewer Reviews Only</strong><br>
@@ -253,7 +253,7 @@
         <div class="row g-3">
             {% for rev in reviews %}
                 <div class="col-12">
-                    <div class="p-3" style="background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+                    <div class="p-3 review-item-panel">
                         <div class="d-flex justify-content-between align-items-start mb-2">
                             <div>
                                 <div class="d-flex align-items-center gap-2 flex-wrap">
@@ -271,18 +271,18 @@
                                     {% if forloop.counter <= rev.rating %}
                                         <i class="fa-solid fa-star"></i>
                                     {% else %}
-                                        <i class="fa-regular fa-star" style="opacity: 0.3;"></i>
+                                        <i class="fa-regular fa-star star-faded"></i>
                                     {% endif %}
                                 {% endfor %}
                             </div>
                         </div>
 
-                        <p class="text-white mb-3 mt-2 fs-6" style="line-height: 1.65;">{{ rev.comment }}</p>
+                        <p class="text-white mb-3 mt-2 fs-6 review-comment">{{ rev.comment }}</p>
 
-                        <div class="d-flex gap-2 justify-content-end pt-2" style="border-top: 1px solid var(--border-color);">
+                        <div class="d-flex gap-2 justify-content-end pt-2 border-top-token">
                             {% if request.user == rev.user %}
                                 <a href="{% url 'review_edit' rev.id %}" class="btn btn-sm btn-outline-glass"><i class="fa-solid fa-pen me-1"></i>Edit</a>
-                                <a href="{% url 'review_delete' rev.id %}" class="btn btn-sm btn-outline-glass" style="color: var(--accent);"><i class="fa-solid fa-trash me-1"></i>Delete</a>
+                                <a href="{% url 'review_delete' rev.id %}" class="btn btn-sm btn-outline-glass btn-outline-accent"><i class="fa-solid fa-trash me-1"></i>Delete</a>
                             {% else %}
                                 <a href="{% url 'review_report' rev.id %}" class="btn btn-sm btn-outline-glass text-muted"><i class="fa-solid fa-flag me-1"></i>Report</a>
                             {% endif %}

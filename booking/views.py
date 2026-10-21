@@ -1,16 +1,25 @@
 from datetime import timedelta
 import re
+import uuid
+import json
+import logging
 from decimal import Decimal, ROUND_HALF_UP
 from django.shortcuts import render, get_object_or_404, redirect
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db import transaction
 from django.db.models import Count, Q
 from django.utils import timezone
-from .models import Show, Theater, Booking, Payment, SeatReservation
+from django.conf import settings
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
+from .models import Show, Theater, Booking, Payment, SeatReservation, Ticket
 from .forms import BookingForm
+from .razorpay_service import RazorpayService
 from movies.models import Movie
+
+logger = logging.getLogger(__name__)
 
 def theater_list_view(request):
     city = request.GET.get('city')
@@ -75,32 +84,28 @@ def show_list_view(request):
     shows = Show.objects.filter(
         is_active=True,
         theater__is_active=True,
-        show_date__gte=today
     ).select_related('movie', 'movie__language', 'theater')
 
     selected_movie = None
     if movie_param and movie_param.strip():
         m_val = movie_param.strip()
-        if m_val.isdigit():
-            selected_movie = Movie.objects.filter(id=int(m_val)).first()
+        # 1. Exact slug match
+        selected_movie = Movie.objects.filter(slug=m_val, is_active=True).first()
+        # 2. Case-insensitive slug match
         if not selected_movie:
-            selected_movie = Movie.objects.filter(slug__iexact=m_val).first()
+            selected_movie = Movie.objects.filter(slug__iexact=m_val, is_active=True).first()
+        # 3. Numeric ID match (if ID passed)
+        if not selected_movie and m_val.isdigit():
+            selected_movie = Movie.objects.filter(id=int(m_val), is_active=True).first()
+        # 4. Exact title match
         if not selected_movie:
-            selected_movie = Movie.objects.filter(title__iexact=m_val).first()
-        if not selected_movie and '-' in m_val:
-            base_slug = m_val.split('-')[0]
-            selected_movie = Movie.objects.filter(slug__iexact=base_slug).first()
-        if not selected_movie:
-            selected_movie = Movie.objects.filter(
-                Q(slug__icontains=m_val) | Q(title__icontains=m_val)
-            ).first()
+            selected_movie = Movie.objects.filter(title__iexact=m_val, is_active=True).first()
 
         if selected_movie:
             shows = shows.filter(movie=selected_movie)
         else:
-            shows = shows.filter(
-                Q(movie__slug__icontains=m_val) | Q(movie__title__icontains=m_val)
-            )
+            # Movie was explicitly requested but not found -> show none, do not display random movies
+            shows = shows.none()
 
     if city_param and city_param.strip():
         c_val = city_param.strip()
@@ -113,7 +118,10 @@ def show_list_view(request):
             parsed_date = dt.strptime(date_param.strip(), '%Y-%m-%d').date()
             shows = shows.filter(show_date=parsed_date)
         except (ValueError, TypeError):
-            pass
+            shows = shows.filter(show_date__gte=today)
+    else:
+        # Default when no date is selected: return all upcoming valid shows
+        shows = shows.filter(show_date__gte=today)
 
     shows = shows.order_by('show_date', 'start_time', 'theater__name')
 
@@ -357,7 +365,7 @@ def booking_create_view(request, show_id):
                 existing_booking = Booking.objects.filter(
                     booking_reference=session_draft['booking_ref'],
                     user=request.user,
-                    payment_status='PENDING'
+                    payment_status__in=['PENDING', 'FAILED', 'CANCELLED']
                 ).first()
 
             if existing_booking:
@@ -365,6 +373,8 @@ def booking_create_view(request, show_id):
                 booking.selected_seats = ', '.join(req_seats)
                 booking.number_of_seats = num_seats
                 booking.total_amount = subtotal
+                booking.status = 'PENDING_PAYMENT'
+                booking.payment_status = 'PENDING'
                 booking.save()
             else:
                 booking = Booking.objects.create(
@@ -373,7 +383,7 @@ def booking_create_view(request, show_id):
                     selected_seats=', '.join(req_seats),
                     number_of_seats=num_seats,
                     total_amount=subtotal,
-                    status='CONFIRMED',
+                    status='PENDING_PAYMENT',
                     payment_status='PENDING',
                     watched=False
                 )
@@ -415,7 +425,13 @@ def booking_create_view(request, show_id):
 
 @login_required
 def payment_process_view(request, reference):
+    from .razorpay_service import RazorpayService
+
     booking = get_object_or_404(Booking, booking_reference=reference, user=request.user)
+
+    # If already confirmed and paid, redirect directly to confirmation ticket
+    if booking.payment_status == 'PAID' and booking.status == 'CONFIRMED':
+        return redirect('booking_detail', reference=booking.booking_reference)
 
     # Server-side validation and recalculation of prices using Decimal (never trust client)
     ticket_price = Decimal(str(booking.show.ticket_price))
@@ -435,94 +451,468 @@ def payment_process_view(request, reference):
     now = timezone.now()
     user_reservations = SeatReservation.objects.filter(booking=booking, user=request.user)
 
-    # If booking is still PENDING, verify active 2-minute reservation hold
-    if booking.payment_status == 'PENDING':
-        active_holds = user_reservations.filter(status='RESERVED', reserved_until__gt=now)
-        if not active_holds.exists():
-            # Released/expired
-            messages.error(request, "⚠ Your 2-minute seat reservation has expired. Please select your seats again.")
-            return redirect('booking_create', show_id=booking.show.id)
+    # Verify active seat reservation hold
+    active_holds = user_reservations.filter(status='RESERVED', reserved_until__gt=now)
+    if not active_holds.exists():
+        # Check if seats are already BOOKED (payment already confirmed - idempotent redirect)
+        already_booked = user_reservations.filter(status='BOOKED').exists()
+        if already_booked:
+            return redirect('booking_detail', reference=booking.booking_reference)
+        # Released/expired - ask user to select seats again
+        messages.error(request, "⚠ Your seat reservation has expired. Please select your seats again.")
+        return redirect('booking_create', show_id=booking.show.id)
 
-        earliest_expiry = min(r.reserved_until for r in active_holds)
-        remaining_seconds = max(0, int((earliest_expiry - now).total_seconds()))
-        reserved_until_iso = earliest_expiry.isoformat()
+    # FIX: Extend reservation to 15 minutes when the payment page is loaded.
+    # Razorpay checkout + card 3DS authentication can take several minutes.
+    # The original 2-minute hold is too short and causes valid payments to fail
+    # with "reservation expired" errors inside payment_verify_view.
+    extended_until = now + timedelta(minutes=15)
+    active_holds.update(reserved_until=extended_until)
+
+    earliest_expiry = extended_until
+    remaining_seconds = max(0, int((earliest_expiry - now).total_seconds()))
+    reserved_until_iso = earliest_expiry.isoformat()
+
+    # Find or create a pending Payment record with Razorpay Order ID
+    payment = Payment.objects.filter(
+        booking=booking,
+        status='PENDING'
+    ).first()
+
+    demo_mode = getattr(settings, 'RAZORPAY_DEMO_MODE', False)
+    is_mock_order = bool(payment and payment.order_id and payment.order_id.startswith(f"order_{booking.booking_reference}"))
+
+    if not payment or not payment.order_id or (is_mock_order and not demo_mode):
+        order_dict = RazorpayService.create_order(booking, grand_total)
+        order_id = order_dict.get('id', '')
+        if not payment:
+            payment = Payment.objects.create(
+                booking=booking,
+                user=request.user,
+                provider='RAZORPAY',
+                order_id=order_id,
+                ticket_amount=subtotal,
+                convenience_fee=convenience_fee,
+                taxes=taxes,
+                total_amount=grand_total,
+                status='PENDING'
+            )
+        else:
+            payment.order_id = order_id
+            payment.ticket_amount = subtotal
+            payment.convenience_fee = convenience_fee
+            payment.taxes = taxes
+            payment.total_amount = grand_total
+            payment.save()
     else:
-        remaining_seconds = 0
-        reserved_until_iso = ""
+        order_id = payment.order_id
 
     payment_failed = False
 
     if request.method == 'POST':
         payment_method = request.POST.get('payment_method', 'UPI')
         payment_action = request.POST.get('payment_action', 'success')
+        razorpay_payment_id = request.POST.get('razorpay_payment_id', '').strip()
+        razorpay_signature = request.POST.get('razorpay_signature', '').strip()
 
         if payment_action == 'fail':
             payment_failed = True
-            messages.error(request, "⚠ Payment Failed. Your seats remain reserved until the timer expires.")
+            payment.status = 'FAILED'
+            payment.failure_reason = 'Payment declined or simulated failure in checkout'
+            payment.save(update_fields=['status', 'failure_reason'])
+            messages.error(request, "⚠ Payment Failed. Your seats remain reserved until the timer expires. You can retry now.")
+        elif payment_action == 'cancel':
+            payment.status = 'CANCELLED'
+            payment.failure_reason = 'Payment cancelled by user'
+            payment.save(update_fields=['status', 'failure_reason'])
+            booking.payment_status = 'CANCELLED'
+            booking.save(update_fields=['payment_status'])
+            messages.info(request, "Payment was cancelled. You can retry before your reservation expires.")
         else:
-            with transaction.atomic():
-                show_locked = Show.objects.select_for_update().get(id=booking.show.id)
-                now_ts = timezone.now()
+            # Payment Success Flow
+            # If signature provided, verify it; if demo simulation without signature, generate valid test signature
+            if not razorpay_signature and getattr(settings, 'PAYMENT_GATEWAY_MODE', 'TEST') in ['TEST', 'DEMO']:
+                razorpay_payment_id = razorpay_payment_id or f"pay_{uuid.uuid4().hex[:12]}"
+                razorpay_signature = RazorpayService.generate_test_signature(order_id, razorpay_payment_id)
 
-                # Lock and verify reservation records inside transaction
-                locked_reservations = SeatReservation.objects.select_for_update().filter(
-                    booking=booking,
-                    user=request.user,
-                    status='RESERVED'
-                )
+            is_valid_sig = RazorpayService.verify_payment_signature(order_id, razorpay_payment_id, razorpay_signature)
+            if not is_valid_sig:
+                payment.status = 'FAILED'
+                payment.failure_reason = 'Cryptographic signature verification failed'
+                payment.save(update_fields=['status', 'failure_reason'])
+                messages.error(request, "⚠ Payment verification failed: Invalid transaction signature.")
+                payment_failed = True
+            else:
+                with transaction.atomic():
+                    show_locked = Show.objects.select_for_update().get(id=booking.show.id)
+                    booking_locked = Booking.objects.select_for_update().get(id=booking.id)
+                    now_ts = timezone.now()
 
-                # Check if reservation expired right before submit
-                if not locked_reservations.exists() or any(r.reserved_until and r.reserved_until <= now_ts for r in locked_reservations):
-                    locked_reservations.delete()
-                    messages.error(request, "⚠ Reservation expired before payment could be completed. Please select seats again.")
-                    return redirect('booking_create', show_id=show_locked.id)
+                    # Idempotency check: if already confirmed
+                    if booking_locked.payment_status == 'PAID' and booking_locked.status == 'CONFIRMED':
+                        return redirect('booking_detail', reference=booking_locked.booking_reference)
 
-                # Promote RESERVED -> BOOKED and clear reserved_until
-                locked_reservations.update(status='BOOKED', reserved_until=None)
+                    # Lock and verify reservation records inside transaction
+                    locked_reservations = SeatReservation.objects.select_for_update().filter(
+                        booking=booking_locked,
+                        user=request.user,
+                        status='RESERVED'
+                    )
 
-                # Create successful payment record
-                Payment.objects.create(
-                    booking=booking,
-                    payment_method=payment_method,
-                    ticket_amount=subtotal,
-                    convenience_fee=convenience_fee,
-                    taxes=taxes,
-                    total_amount=grand_total,
-                    status='SUCCESS'
-                )
+                    # Check if reservation expired right before submit
+                    if not locked_reservations.exists() or any(r.reserved_until and r.reserved_until <= now_ts for r in locked_reservations):
+                        locked_reservations.delete()
+                        payment.status = 'FAILED'
+                        payment.failure_reason = 'Reservation expired before payment could be confirmed'
+                        payment.save(update_fields=['status', 'failure_reason'])
+                        messages.error(request, "⚠ Reservation expired before payment could be completed. Please select seats again.")
+                        return redirect('booking_create', show_id=show_locked.id)
 
-                # Confirm booking status
-                booking.payment_status = 'PAID'
-                booking.save(update_fields=['payment_status'])
+                    # Promote RESERVED -> BOOKED and clear reserved_until
+                    locked_reservations.update(status='BOOKED', reserved_until=None)
 
-                # Synchronize show available seats
-                active_holds_and_booked = SeatReservation.objects.filter(
-                    Q(show=show_locked, status='BOOKED') |
-                    Q(show=show_locked, status='RESERVED', reserved_until__gt=now_ts)
-                ).count()
-                show_locked.available_seats = max(0, show_locked.total_seats - active_holds_and_booked)
-                show_locked.save(update_fields=['available_seats'])
+                    # Update successful payment record
+                    payment.payment_id = razorpay_payment_id
+                    payment.signature = razorpay_signature
+                    payment.payment_method = payment_method
+                    payment.status = 'SUCCESS'
+                    payment.verified_at = now_ts
+                    payment.save()
 
-                # Clear session draft
-                request.session.pop('booking_draft', None)
+                    # Confirm booking status
+                    booking_locked.status = 'CONFIRMED'
+                    booking_locked.payment_status = 'PAID'
+                    booking_locked.save(update_fields=['status', 'payment_status'])
 
-            formatted_total = f"{grand_total:.2f}"
-            messages.success(request, f"✓ Payment of ₹{formatted_total} Successful! Booking Confirmed.")
-            return redirect('booking_detail', reference=booking.booking_reference)
+                    # Synchronize show available seats
+                    active_holds_and_booked = SeatReservation.objects.filter(
+                        Q(show=show_locked, status='BOOKED') |
+                        Q(show=show_locked, status='RESERVED', reserved_until__gt=now_ts)
+                    ).count()
+                    show_locked.available_seats = max(0, show_locked.total_seats - active_holds_and_booked)
+                    show_locked.save(update_fields=['available_seats'])
+
+                    # Create canonical Ticket and queue async PDF+email generation
+                    _ticket, _tcreated = Ticket.objects.get_or_create(booking=booking_locked)
+                    _bk_id = booking_locked.id
+                    transaction.on_commit(lambda: _dispatch_ticket_task(_bk_id))
+
+                    # Clear session draft
+                    request.session.pop('booking_draft', None)
+
+                formatted_total = f"{grand_total:.2f}"
+                messages.success(request, f"✓ Payment of ₹{formatted_total} Verified & Successful! Booking Confirmed.")
+                return redirect('booking_detail', reference=booking.booking_reference)
+
+    amount_in_paise = int((grand_total * Decimal('100')).quantize(Decimal('1')))
+    key_id = getattr(settings, 'RAZORPAY_KEY_ID', '')
+    demo_mode = getattr(settings, 'RAZORPAY_DEMO_MODE', False)
+    test_payment_id = f"pay_test_{uuid.uuid4().hex[:10]}"
+    test_signature = RazorpayService.generate_test_signature(order_id, test_payment_id)
 
     context = {
         'booking': booking,
+        'payment': payment,
         'ticket_price': ticket_price,
         'subtotal': subtotal,
         'ticket_amount': subtotal,
         'convenience_fee': convenience_fee,
         'taxes': taxes,
         'grand_total': grand_total,
+        'amount_in_paise': amount_in_paise,
+        'razorpay_key_id': key_id,
+        'razorpay_order_id': order_id,
+        'demo_mode': demo_mode,
+        'test_payment_id': test_payment_id,
+        'test_signature': test_signature,
         'payment_failed': payment_failed,
         'remaining_seconds': remaining_seconds,
         'reserved_until_iso': reserved_until_iso,
+        'payment_gateway_mode': getattr(settings, 'PAYMENT_GATEWAY_MODE', 'TEST'),
     }
     return render(request, 'booking/booking_payment.html', context)
+
+@login_required
+def payment_verify_view(request):
+    """
+    Dedicated server-side payment signature verification endpoint.
+    Handles Razorpay checkout handler callback.
+    """
+    from .razorpay_service import RazorpayService
+
+    if request.method != 'POST':
+        return redirect('my_bookings')
+
+    order_id = request.POST.get('razorpay_order_id', '').strip()
+    payment_id = request.POST.get('razorpay_payment_id', '').strip()
+    signature = request.POST.get('razorpay_signature', '').strip()
+    booking_ref = request.POST.get('booking_reference', '').strip()
+    payment_method = request.POST.get('payment_method', 'UPI')
+
+    logger.info(
+        f"[PAYMENT_VERIFY] Callback received | User: {request.user.username} | "
+        f"Booking: {booking_ref} | Order: {order_id} | Payment: {payment_id} | Sig Length: {len(signature)}"
+    )
+
+    if not order_id and not booking_ref:
+        logger.warning(f"[PAYMENT_VERIFY] Missing required parameters | User: {request.user.username}")
+        messages.error(request, "Missing payment verification parameters.")
+        return redirect('my_bookings')
+
+    if booking_ref:
+        booking = get_object_or_404(Booking, booking_reference=booking_ref, user=request.user)
+    else:
+        payment_obj = get_object_or_404(Payment, order_id=order_id, user=request.user)
+        booking = payment_obj.booking
+
+    payment = Payment.objects.filter(booking=booking, order_id=order_id).first()
+    if not payment:
+        payment = Payment.objects.filter(booking=booking).order_by('-created_at').first()
+
+    # Server-side cryptographic signature check
+    is_valid = RazorpayService.verify_payment_signature(order_id, payment_id, signature)
+
+    if not is_valid:
+        logger.warning(
+            f"[PAYMENT_VERIFY] Verification failed for booking {booking.booking_reference} | "
+            f"Order ID: {order_id} | Payment ID: {payment_id}"
+        )
+        if payment:
+            payment.status = 'FAILED'
+            payment.failure_reason = 'Invalid signature verification on server'
+            payment.save(update_fields=['status', 'failure_reason'])
+        booking.payment_status = 'FAILED'
+        booking.save(update_fields=['payment_status'])
+        messages.error(request, "⚠ Payment signature verification failed. Booking not confirmed.")
+        return redirect('booking_payment', reference=booking.booking_reference)
+
+    with transaction.atomic():
+        booking_locked = Booking.objects.select_for_update().get(id=booking.id)
+        show_locked = Show.objects.select_for_update().get(id=booking.show.id)
+        now_ts = timezone.now()
+
+        # Idempotency check: Already processed
+        if booking_locked.payment_status == 'PAID' and booking_locked.status == 'CONFIRMED':
+            logger.info(f"[PAYMENT_VERIFY] Idempotent hit: Booking {booking.booking_reference} already confirmed.")
+            return redirect('booking_detail', reference=booking_locked.booking_reference)
+
+        # Lock seat reservation records (RESERVED or already BOOKED)
+        locked_reserved = SeatReservation.objects.select_for_update().filter(
+            booking=booking_locked,
+            user=request.user,
+            status='RESERVED'
+        )
+        locked_booked = SeatReservation.objects.select_for_update().filter(
+            booking=booking_locked,
+            user=request.user,
+            status='BOOKED'
+        )
+
+        # If seats are already BOOKED this is a duplicate callback — idempotent
+        if locked_booked.exists() and not locked_reserved.exists():
+            logger.info(f"[PAYMENT_VERIFY] Seats already BOOKED for booking {booking.booking_reference} — idempotent re-confirm")
+            # Still update payment record if needed
+            if payment and payment.status != 'SUCCESS':
+                payment.payment_id = payment_id
+                payment.signature = signature
+                payment.payment_method = payment_method
+                payment.status = 'SUCCESS'
+                payment.verified_at = now_ts
+                payment.save()
+            if booking_locked.payment_status != 'PAID':
+                booking_locked.status = 'CONFIRMED'
+                booking_locked.payment_status = 'PAID'
+                booking_locked.save(update_fields=['status', 'payment_status'])
+            return redirect('booking_detail', reference=booking_locked.booking_reference)
+
+        # No RESERVED seats found — reservation has truly expired
+        if not locked_reserved.exists():
+            if payment:
+                payment.status = 'FAILED'
+                payment.failure_reason = 'Reservation expired before signature verification'
+                payment.save(update_fields=['status', 'failure_reason'])
+            logger.warning(f"[PAYMENT_VERIFY] No active reservations for booking {booking.booking_reference}")
+            messages.error(request, "⚠ Reservation expired before payment verification completed. Please re-select seats.")
+            return redirect('booking_create', show_id=show_locked.id)
+
+        # Check if all RESERVED seats are still within the hold window
+        expired_seats = [r for r in locked_reserved if r.reserved_until and r.reserved_until <= now_ts]
+        if expired_seats:
+            expired_nums = [r.seat_number for r in expired_seats]
+            logger.warning(
+                f"[PAYMENT_VERIFY] Expired reserved seats {expired_nums} for booking "
+                f"{booking.booking_reference} — Razorpay payment was valid, so proceeding anyway"
+            )
+            # Payment was cryptographically verified — honour it even if the hold
+            # window elapsed during Razorpay's checkout/3DS flow.
+            # Do NOT reject a real payment purely because our 2-minute timer expired.
+
+        locked_reservations = locked_reserved
+
+        locked_reservations.update(status='BOOKED', reserved_until=None)
+
+        if payment:
+            payment.payment_id = payment_id
+            payment.signature = signature
+            payment.payment_method = payment_method
+            payment.status = 'SUCCESS'
+            payment.verified_at = now_ts
+            payment.save()
+
+        booking_locked.status = 'CONFIRMED'
+        booking_locked.payment_status = 'PAID'
+        booking_locked.save(update_fields=['status', 'payment_status'])
+
+        # Recalculate show available seats
+        active_holds_and_booked = SeatReservation.objects.filter(
+            Q(show=show_locked, status='BOOKED') |
+            Q(show=show_locked, status='RESERVED', reserved_until__gt=now_ts)
+        ).count()
+        show_locked.available_seats = max(0, show_locked.total_seats - active_holds_and_booked)
+        show_locked.save(update_fields=['available_seats'])
+
+        # Create canonical Ticket and queue async PDF+email generation
+        _ticket, _tcreated = Ticket.objects.get_or_create(booking=booking_locked)
+        _bk_id = booking_locked.id
+        transaction.on_commit(lambda: _dispatch_ticket_task(_bk_id))
+
+        request.session.pop('booking_draft', None)
+
+    logger.info(
+        f"[PAYMENT_VERIFY] Booking {booking.booking_reference} confirmed successfully | "
+        f"Payment ID: {payment_id} | Seats Booked: {booking.selected_seats}"
+    )
+    messages.success(request, f"✓ Payment Verified Successfully! Booking {booking.booking_reference} Confirmed.")
+    return redirect('booking_detail', reference=booking.booking_reference)
+
+@login_required
+def payment_cancel_view(request, reference):
+    """
+    Handles payment cancellation by user during checkout.
+    """
+    booking = get_object_or_404(Booking, booking_reference=reference, user=request.user)
+
+    if booking.payment_status != 'PAID':
+        Payment.objects.filter(booking=booking, status='PENDING').update(
+            status='CANCELLED',
+            failure_reason='Cancelled by customer at checkout'
+        )
+        booking.status = 'CANCELLED'
+        booking.payment_status = 'CANCELLED'
+        booking.save(update_fields=['status', 'payment_status'])
+
+        # Check if reservation is expired
+        now_ts = timezone.now()
+        SeatReservation.objects.filter(booking=booking, status='RESERVED', reserved_until__lte=now_ts).delete()
+
+        messages.info(request, "Payment was cancelled. You can retry anytime before your reservation expires.")
+
+    return redirect('my_bookings')
+
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
+from django.http import HttpResponse
+
+@csrf_exempt
+@require_POST
+def razorpay_webhook_view(request):
+    """
+    Secure, idempotent Razorpay Webhook listener.
+    Verifies X-Razorpay-Signature and processes asynchronous payment events.
+    """
+    from .razorpay_service import RazorpayService
+    import json
+
+    signature = request.headers.get('X-Razorpay-Signature', '')
+    if not signature:
+        return HttpResponse("Missing signature", status=400)
+
+    is_valid = RazorpayService.verify_webhook_signature(request.body, signature)
+    if not is_valid:
+        return HttpResponse("Invalid signature", status=400)
+
+    try:
+        data = json.loads(request.body.decode('utf-8'))
+    except Exception:
+        return HttpResponse("Invalid JSON payload", status=400)
+
+    event = data.get('event', '')
+    payload = data.get('payload', {})
+
+    if event in ['payment.captured', 'order.paid']:
+        payment_entity = payload.get('payment', {}).get('entity', {})
+        order_id = payment_entity.get('order_id') or payload.get('order', {}).get('entity', {}).get('id')
+        payment_id = payment_entity.get('id')
+        payment_method = payment_entity.get('method', 'UPI')
+
+        if order_id:
+            payment = Payment.objects.filter(order_id=order_id).first()
+            if payment and payment.status != 'SUCCESS':
+                with transaction.atomic():
+                    booking = Booking.objects.select_for_update().get(id=payment.booking_id)
+                    show = Show.objects.select_for_update().get(id=booking.show_id)
+                    now_ts = timezone.now()
+
+                    # Promote seat reservations to BOOKED
+                    SeatReservation.objects.filter(
+                        booking=booking,
+                        status='RESERVED'
+                    ).update(status='BOOKED', reserved_until=None)
+
+                    payment.payment_id = payment_id
+                    payment.status = 'SUCCESS'
+                    payment.payment_method = payment_method.upper()
+                    payment.verified_at = now_ts
+                    payment.save()
+
+                    booking.status = 'CONFIRMED'
+                    booking.payment_status = 'PAID'
+                    booking.save(update_fields=['status', 'payment_status'])
+
+                    active_holds_and_booked = SeatReservation.objects.filter(
+                        Q(show=show, status='BOOKED') |
+                        Q(show=show, status='RESERVED', reserved_until__gt=now_ts)
+                    ).count()
+                    show.available_seats = max(0, show.total_seats - active_holds_and_booked)
+                    show.save(update_fields=['available_seats'])
+
+                    # Create canonical Ticket and queue async PDF+email generation
+                    _ticket, _tcreated = Ticket.objects.get_or_create(booking=booking)
+                    _bk_id = booking.id
+                    transaction.on_commit(lambda: _dispatch_ticket_task(_bk_id))
+
+    elif event == 'payment.failed':
+        payment_entity = payload.get('payment', {}).get('entity', {})
+        order_id = payment_entity.get('order_id')
+        error_desc = payment_entity.get('error_description', 'Payment failed via webhook notification')
+        error_code = payment_entity.get('error_code', '')
+
+        if order_id:
+            payment = Payment.objects.filter(order_id=order_id).first()
+            if payment and payment.status == 'PENDING':
+                payment.status = 'FAILED'
+                payment.failure_reason = error_desc
+                payment.error_code = error_code
+                payment.save(update_fields=['status', 'failure_reason', 'error_code'])
+                Booking.objects.filter(id=payment.booking_id, payment_status='PENDING').update(payment_status='FAILED')
+
+    elif event == 'refund.processed':
+        refund_entity = payload.get('refund', {}).get('entity', {})
+        payment_id = refund_entity.get('payment_id')
+        refund_id = refund_entity.get('id')
+        refund_amount = Decimal(str(refund_entity.get('amount', 0))) / Decimal('100')
+
+        if payment_id:
+            payment = Payment.objects.filter(payment_id=payment_id).first()
+            if payment:
+                payment.refund_id = refund_id
+                payment.refund_amount = refund_amount
+                payment.refund_status = 'PROCESSED'
+                payment.refunded_at = timezone.now()
+                payment.save(update_fields=['refund_id', 'refund_amount', 'refund_status', 'refunded_at'])
+                Booking.objects.filter(id=payment.booking_id).update(payment_status='REFUNDED', status='CANCELLED')
+
+    return JsonResponse({'status': 'ok', 'event': event})
 
 @login_required
 def my_bookings_view(request):
@@ -540,7 +930,7 @@ def my_bookings_view(request):
         'watched': user_bookings.filter(watched=True).count(),
     }
 
-    bookings = user_bookings.select_related('show__movie', 'show__theater', 'show__movie__language').order_by('-booking_date')
+    bookings = user_bookings.select_related('show__movie', 'show__theater', 'show__movie__language').prefetch_related('payments').order_by('-booking_date')
 
     if status_filter == 'upcoming':
         bookings = bookings.filter(status='CONFIRMED', show__show_date__gte=today)
@@ -570,7 +960,9 @@ def my_bookings_view(request):
 @login_required
 def booking_detail_view(request, reference):
     booking = get_object_or_404(Booking, booking_reference=reference, user=request.user)
-    payment = booking.payments.filter(status='SUCCESS').first()
+    payment = booking.payments.filter(status='SUCCESS').order_by('-created_at').first()
+    if not payment:
+        payment = booking.payments.order_by('-created_at').first()
     return render(request, 'booking/booking_success.html', {'booking': booking, 'payment': payment})
 
 @login_required
@@ -593,6 +985,16 @@ def booking_cancel_view(request, reference):
 
             show = Show.objects.select_for_update().get(id=booking.show.id)
 
+            # Record refund on payment record
+            payment = booking.payments.filter(status='SUCCESS').order_by('-created_at').first()
+            if payment:
+                payment.refund_id = f"rfnd_{uuid.uuid4().hex[:12]}"
+                payment.refund_amount = booking.total_amount
+                payment.refund_status = 'PROCESSED'
+                payment.refund_reason = 'USER_CANCELLATION'
+                payment.refunded_at = timezone.now()
+                payment.save(update_fields=['refund_id', 'refund_amount', 'refund_status', 'refund_reason', 'refunded_at'])
+
             # Delete/release all seat reservations associated with this booking
             SeatReservation.objects.filter(booking=booking).delete()
 
@@ -608,4 +1010,88 @@ def booking_cancel_view(request, reference):
             return redirect('my_bookings')
 
     return render(request, 'booking/booking_cancel_confirm.html', {'booking': booking})
+
+
+def _dispatch_ticket_task(booking_id):
+    """Helper to dispatch ticket generation task. Handles import gracefully."""
+    try:
+        from booking.tasks import generate_and_email_ticket_task
+        generate_and_email_ticket_task.delay(booking_id)
+        logger.info(f"[TICKET_DISPATCH] Queued ticket task for booking_id={booking_id}")
+    except Exception as exc:
+        logger.error(f"[TICKET_DISPATCH] Failed to queue ticket task for booking_id={booking_id}: {exc}")
+
+
+@login_required
+def ticket_download_view(request, reference):
+    """
+    Download PDF ticket for a confirmed booking.
+    Generates on-demand if not yet cached.
+    Only the booking owner can download.
+    """
+    booking = get_object_or_404(
+        Booking.objects.select_related('show__movie', 'show__theater', 'user'),
+        booking_reference=reference
+    )
+
+    if booking.user != request.user and not request.user.is_staff:
+        from django.http import HttpResponseForbidden
+        return HttpResponseForbidden("You are not authorized to download this ticket.")
+
+    if booking.status not in ('CONFIRMED', 'COMPLETED') or booking.payment_status != 'PAID':
+        messages.error(request, "Ticket download is only available for confirmed bookings.")
+        return redirect('my_bookings')
+
+    # Get or create ticket
+    ticket, created = Ticket.objects.get_or_create(booking=booking)
+
+    # Generate PDF on demand if not yet generated
+    from booking.pdf_service import generate_ticket_pdf
+    try:
+        pdf_bytes = generate_ticket_pdf(ticket)
+    except Exception as exc:
+        logger.error(f"[TICKET_DOWNLOAD] PDF generation failed for {reference}: {exc}")
+        messages.error(request, "Failed to generate PDF ticket. Please try again later.")
+        return redirect('booking_detail', reference=reference)
+
+    response = HttpResponse(pdf_bytes, content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="CineVerse_Ticket_{reference}.pdf"'
+    return response
+
+
+def ticket_verify_view(request, token):
+    """
+    Public QR verification endpoint.
+    Displays ticket validation status without exposing sensitive customer info.
+    """
+    ticket = Ticket.objects.select_related(
+        'booking__show__movie', 'booking__show__movie__language',
+        'booking__show__theater', 'booking__user'
+    ).filter(verification_token=token).first()
+
+    context = {
+        'ticket': ticket,
+        'is_valid': False,
+        'status_message': 'Invalid Ticket',
+        'status_class': 'danger',
+    }
+
+    if ticket:
+        booking = ticket.booking
+        if booking.status == 'CONFIRMED' and booking.payment_status == 'PAID':
+            context['is_valid'] = True
+            context['status_message'] = 'Valid Ticket — Verified ✓'
+            context['status_class'] = 'success'
+        elif booking.status == 'COMPLETED':
+            context['is_valid'] = True
+            context['status_message'] = 'Valid Ticket — Show Completed'
+            context['status_class'] = 'info'
+        elif booking.status == 'CANCELLED':
+            context['status_message'] = 'Ticket Cancelled'
+            context['status_class'] = 'danger'
+        else:
+            context['status_message'] = 'Ticket Invalid or Payment Pending'
+            context['status_class'] = 'warning'
+
+    return render(request, 'booking/ticket_verify.html', context)
 

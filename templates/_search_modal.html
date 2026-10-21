@@ -1,10 +1,10 @@
 <!-- Aurora Glass Quick Search Modal -->
 <div class="modal fade modal-glass" id="globalSearchModal" tabindex="-1" aria-labelledby="globalSearchModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content aurora-card border-0" style="background: rgba(13, 19, 38, 0.94); backdrop-filter: blur(30px);">
+        <div class="modal-content aurora-card border-0 modal-aurora-bg">
             <div class="modal-header border-bottom border-secondary pb-3">
                 <h5 class="modal-title fw-bold text-white" id="globalSearchModalLabel">
-                    <i class="fa-solid fa-magnifying-glass me-2" style="color: var(--cyan);"></i>Search CineVerse
+                    <i class="fa-solid fa-magnifying-glass me-2 icon-cyan"></i>Search CineVerse
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
@@ -14,10 +14,10 @@
                         <input type="hidden" name="city" value="{{ selected_city }}">
                     {% endif %}
                     <div class="input-group input-group-lg mb-4">
-                        <span class="input-group-text bg-transparent border-end-0" style="border-color: var(--glass-border) !important; color: var(--purple);">
+                        <span class="input-group-text bg-transparent border-end-0 ig-glass-border icon-purple">
                             <i class="fa-solid fa-magnifying-glass fs-4"></i>
                         </span>
-                        <input type="text" name="q" class="form-control form-control-cineverse border-start-0 fs-5 ps-0 text-white" placeholder="Search movies, actors, theaters, cities, genres..." autofocus required style="background: transparent;">
+                        <input type="text" name="q" class="form-control form-control-cineverse border-start-0 fs-5 ps-0 text-white input-transparent" placeholder="Search movies, actors, theaters, cities, genres..." autofocus required aria-label="Search movies, actors, theaters, cities, genres" title="Search movies, actors, theaters, cities, genres">
                         <button class="btn btn-aurora px-4" type="submit">Search</button>
                     </div>
                 </form>

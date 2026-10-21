@@ -1,10 +1,18 @@
 from django.shortcuts import render, get_object_or_404
 from django.core.paginator import Paginator
+from django.http import JsonResponse
 from django.db.models import Q
 from django.utils import timezone
 from .models import Movie, Genre, Language
 from .forms import MovieFilterForm
-from .utils import get_similar_movies, get_trending_movies, get_recently_released_movies
+from .utils import (
+    get_similar_movies,
+    get_trending_movies,
+    get_recently_released_movies,
+    get_personalized_recommendations,
+    record_movie_view,
+    build_movie_discovery_queryset
+)
 from reviews.services import can_user_review
 from booking.models import Show, Theater
 
@@ -60,71 +68,104 @@ def home_view(request):
     return render(request, 'home.html', context)
 
 def movie_list_view(request):
+    """
+    Feature-rich Movie Discovery view with title search, cumulative multi-facet filters,
+    sorting, dynamic match counts, database-backed pagination, and personalized recommendations.
+    """
     form = MovieFilterForm(request.GET or None)
-    movies = Movie.objects.filter(is_active=True).select_related('language').prefetch_related('genres', 'images')
+    movies = build_movie_discovery_queryset(request.GET, request=request)
 
-    selected_genre = None
-    selected_language = None
-    selected_city = request.GET.get('city')
+    # Dynamic matching movie count (using efficient SQL aggregate)
+    match_count = movies.count()
 
-    if selected_city:
-        today = timezone.now().date()
-        movies = movies.filter(
-            shows__theater__city__iexact=selected_city,
-            shows__is_active=True,
-            shows__show_date__gte=today
-        ).distinct()
-
-    if form.is_valid():
-        q = form.cleaned_data.get('q')
-        if q:
-            movies = movies.filter(
-                Q(title__icontains=q) |
-                Q(description__icontains=q) |
-                Q(director__icontains=q) |
-                Q(cast__name__icontains=q)
-            ).distinct()
-
-        genre_obj = form.cleaned_data.get('genre')
-        if genre_obj:
-            movies = movies.filter(genres=genre_obj)
-            selected_genre = genre_obj
-
-        lang_obj = form.cleaned_data.get('language')
-        if lang_obj:
-            movies = movies.filter(language=lang_obj)
-            selected_language = lang_obj
-
-        min_rating = form.cleaned_data.get('rating')
-        if min_rating:
-            movies = movies.filter(average_rating__gte=float(min_rating))
-
-        sort_by = form.cleaned_data.get('sort_by')
-        if sort_by:
-            movies = movies.order_by(sort_by)
-
+    # Pagination: 12 movies per page
     paginator = Paginator(movies, 12)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
+    # Personalized recommendations for active user / session
+    recommended_movies = get_personalized_recommendations(
+        user=request.user,
+        session=request.session,
+        limit=6
+    )
+
     genres = Genre.objects.all()
     languages = Language.objects.all()
     all_cities = sorted(list(set(Theater.objects.filter(is_active=True).values_list('city', flat=True).distinct())))
+    
+    selected_city = request.GET.get('city')
+    theaters_qs = Theater.objects.filter(is_active=True)
+    if selected_city:
+        theaters_qs = theaters_qs.filter(city__iexact=selected_city)
+    theaters = theaters_qs.order_by('name')
+
+    # Detect if any active filters are applied (for 'Clear Filters' button display)
+    active_filters_applied = any([
+        request.GET.get('q'),
+        request.GET.get('genre'),
+        request.GET.get('language'),
+        request.GET.get('city'),
+        request.GET.get('theater'),
+        request.GET.get('rating'),
+        request.GET.get('min_rating'),
+        request.GET.get('release_date'),
+        request.GET.get('show_time'),
+        request.GET.get('sort_by') and request.GET.get('sort_by') != 'popularity',
+        request.GET.get('sort') and request.GET.get('sort') != 'popularity',
+    ])
 
     context = {
         'form': form,
         'page_obj': page_obj,
+        'match_count': match_count,
+        'recommended_movies': recommended_movies,
         'genres': genres,
         'languages': languages,
         'cities': all_cities,
-        'selected_genre': selected_genre,
-        'selected_language': selected_language,
+        'theaters': theaters,
+        'selected_genre': request.GET.get('genre'),
+        'selected_language': request.GET.get('language'),
         'selected_city': selected_city,
+        'selected_theater': request.GET.get('theater'),
+        'selected_rating': request.GET.get('rating') or request.GET.get('min_rating'),
+        'selected_release_date': request.GET.get('release_date'),
+        'selected_show_time': request.GET.get('show_time'),
+        'selected_sort': request.GET.get('sort') or request.GET.get('sort_by') or 'popularity',
+        'search_query': request.GET.get('q', ''),
+        'active_filters_applied': active_filters_applied,
     }
     return render(request, 'movies/movie_list.html', context)
 
+def movie_discovery_count_api(request):
+    """
+    Lightweight AJAX endpoint returning the dynamic count of matching movies
+    without loading full movie objects or reloading the page.
+    """
+    movies = build_movie_discovery_queryset(request.GET, request=request)
+    return JsonResponse({'count': movies.count()})
+
+def movie_discovery_theaters_api(request):
+    """
+    AJAX endpoint returning list of active theaters filtered by selected city.
+    """
+    city = request.GET.get('city')
+    theaters_qs = Theater.objects.filter(is_active=True)
+    if city and city.strip():
+        theaters_qs = theaters_qs.filter(city__iexact=city.strip())
+    
+    data = [
+        {'id': t.id, 'name': t.name, 'city': t.city, 'location': t.location}
+        for t in theaters_qs.order_by('name')
+    ]
+    return JsonResponse({'theaters': data})
+
 def movie_detail_view(request, slug):
     movie = get_object_or_404(Movie, slug=slug, is_active=True)
+    
+    # Record viewing history for recommendations
+    record_movie_view(request, movie)
+
     selected_city = request.GET.get('city')
     
     today = timezone.now().date()

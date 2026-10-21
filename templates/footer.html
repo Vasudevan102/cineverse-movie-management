@@ -3,17 +3,17 @@
         <div class="row g-4 mb-4">
             <div class="col-lg-5">
                 <a class="navbar-brand d-flex align-items-center brand-logo mb-2" href="{% url 'home' %}">
-                    <i class="fa-solid fa-film me-2" style="color: var(--purple);"></i>
+                    <i class="fa-solid fa-film me-2 icon-purple"></i>
                     <span>Cine</span>Verse
                 </a>
-                <p class="small text-muted mb-3" style="max-width: 400px;">
+                <p class="small text-muted mb-3 container-400">
                     CineVerse is your ultimate modern cinema ticket booking and movie discovery platform. Experience seamless show scheduling, verified viewer reviews, and smart movie recommendations.
                 </p>
                 <div class="d-flex gap-3 fs-5">
-                    <a href="#" class="text-secondary hover-accent"><i class="fa-brands fa-github"></i></a>
-                    <a href="#" class="text-secondary hover-accent"><i class="fa-brands fa-twitter"></i></a>
-                    <a href="#" class="text-secondary hover-accent"><i class="fa-brands fa-instagram"></i></a>
-                    <a href="#" class="text-secondary hover-accent"><i class="fa-brands fa-youtube"></i></a>
+                    <a href="#" class="text-secondary hover-accent" aria-label="GitHub" title="GitHub"><i class="fa-brands fa-github"></i></a>
+                    <a href="#" class="text-secondary hover-accent" aria-label="Twitter" title="Twitter"><i class="fa-brands fa-twitter"></i></a>
+                    <a href="#" class="text-secondary hover-accent" aria-label="Instagram" title="Instagram"><i class="fa-brands fa-instagram"></i></a>
+                    <a href="#" class="text-secondary hover-accent" aria-label="YouTube" title="YouTube"><i class="fa-brands fa-youtube"></i></a>
                 </div>
             </div>
             <div class="col-6 col-lg-2">
@@ -38,14 +38,14 @@
                 <h6 class="text-light fw-bold mb-3">Newsletter</h6>
                 <p class="small text-muted mb-2">Subscribe to get notifications about new releases & exclusive movie tickets.</p>
                 <div class="input-group">
-                    <input type="email" class="form-control form-control-cineverse py-1 fs-6" placeholder="Enter your email">
-                    <button class="btn btn-accent py-1 px-3" type="button"><i class="fa-solid fa-paper-plane"></i></button>
+                    <input type="email" class="form-control form-control-cineverse py-1 fs-6" placeholder="Enter your email" aria-label="Enter your email" title="Enter your email">
+                    <button class="btn btn-accent py-1 px-3" type="button" aria-label="Subscribe to newsletter" title="Subscribe to newsletter"><i class="fa-solid fa-paper-plane"></i></button>
                 </div>
             </div>
         </div>
         <div class="border-top border-secondary pt-3 text-center small text-muted">
             <div>&copy; 2026 CineVerse Movie Management System. Built with Django & Bootstrap 5. All rights reserved.</div>
-            <div class="mt-1 text-secondary" style="font-size: 0.75rem;">This product uses the TMDB API but is not endorsed or certified by TMDB.</div>
+            <div class="mt-1 text-secondary footer-text-tiny">This product uses the TMDB API but is not endorsed or certified by TMDB.</div>
         </div>
     </div>
 </footer>
