@@ -40,6 +40,10 @@ media/
 media/cache/
 staticfiles/
 
+# Redis local binaries
+Redis/
+Redis.zip
+
 # IDE & OS
 .idea/
 .vscode/

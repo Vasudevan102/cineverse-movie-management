@@ -1,0 +1,100 @@
+# Render Infrastructure-as-Code Blueprint
+# https://docs.render.com/infrastructure-as-code
+
+databases:
+  - name: cineverse-db
+    plan: free
+    databaseName: cineverse
+    user: cineverse_user
+
+services:
+  # --- Django Web Service ---
+  - type: web
+    name: cineverse-web
+    runtime: python
+    plan: free
+    buildCommand: |
+      pip install -r requirements.txt
+      python manage.py collectstatic --no-input
+      python manage.py migrate
+      python manage.py seed_data
+    startCommand: gunicorn movie_management.wsgi:application --bind 0.0.0.0:$PORT
+    envVars:
+      - key: DEBUG
+        value: "False"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ALLOWED_HOSTS
+        value: ".onrender.com"
+      - key: CSRF_TRUSTED_ORIGINS
+        value: "https://*.onrender.com"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: cineverse-db
+          property: connectionString
+      - key: CELERY_BROKER_URL
+        value: "redis://red-placeholder:6379/0"  # Replace with Render Redis internal URL
+      - key: CELERY_RESULT_BACKEND
+        value: "redis://red-placeholder:6379/0"  # Replace with Render Redis internal URL
+      - key: PYTHON_VERSION
+        value: "3.11.6"
+      - key: RAZORPAY_KEY_ID
+        sync: false
+      - key: RAZORPAY_KEY_SECRET
+        sync: false
+      - key: RAZORPAY_WEBHOOK_SECRET
+        sync: false
+      - key: PAYMENT_GATEWAY_MODE
+        value: "TEST"
+      - key: EMAIL_BACKEND
+        value: "django.core.mail.backends.smtp.EmailBackend"
+      - key: EMAIL_HOST
+        value: "smtp.gmail.com"
+      - key: EMAIL_PORT
+        value: "587"
+      - key: EMAIL_USE_TLS
+        value: "True"
+      - key: EMAIL_HOST_USER
+        sync: false
+      - key: EMAIL_HOST_PASSWORD
+        sync: false
+      - key: DEFAULT_FROM_EMAIL
+        value: "CineVerse <noreply@cineverse.app>"
+      - key: DJANGO_SUPERUSER_USERNAME
+        value: "vasudevan"
+      - key: DJANGO_SUPERUSER_EMAIL
+        value: "vasudevan@cineverse.com"
+      - key: DJANGO_SUPERUSER_PASSWORD
+        sync: false
+
+  # --- Celery Background Worker ---
+  - type: worker
+    name: cineverse-worker
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: celery -A movie_management worker --loglevel=info --concurrency=2
+    envVars:
+      - key: DEBUG
+        value: "False"
+      - key: SECRET_KEY
+        fromService:
+          type: web
+          name: cineverse-web
+          envVarKey: SECRET_KEY
+      - key: DATABASE_URL
+        fromDatabase:
+          name: cineverse-db
+          property: connectionString
+      - key: CELERY_BROKER_URL
+        value: "redis://red-placeholder:6379/0"  # Replace with Render Redis internal URL
+      - key: CELERY_RESULT_BACKEND
+        value: "redis://red-placeholder:6379/0"  # Replace with Render Redis internal URL
+      - key: RAZORPAY_KEY_ID
+        sync: false
+      - key: RAZORPAY_KEY_SECRET
+        sync: false
+      - key: EMAIL_HOST_USER
+        sync: false
+      - key: EMAIL_HOST_PASSWORD
+        sync: false
